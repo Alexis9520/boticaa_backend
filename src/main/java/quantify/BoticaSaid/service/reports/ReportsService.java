@@ -430,7 +430,8 @@ public class ReportsService {
       SELECT s.id AS lote_id, s.cantidad_unidades, s.fecha_vencimiento, s.precio_compra,
              CASE WHEN s.fecha_vencimiento IS NOT NULL AND s.fecha_vencimiento < CURDATE() THEN 'VENCIDO' ELSE 'OK' END AS estado
       FROM stock s
-      WHERE s.producto_id = ?
+      JOIN productos p ON s.producto_id = p.id
+      WHERE p.codigo_barras = ?
       ORDER BY s.fecha_vencimiento IS NULL, s.fecha_vencimiento
       """;
         return jdbc.query(sql, ps -> ps.setString(1, codigoBarras), (rs,i)->{
