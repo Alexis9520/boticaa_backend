@@ -11,7 +11,10 @@ import java.util.List;
 public class Producto {
 
     @Id
-    @Column(name = "codigo_barras", length = 255)
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long id;
+
+    @Column(name = "codigo_barras", length = 255, unique = true)
     private String codigoBarras;
 
     private String nombre;
@@ -66,6 +69,14 @@ public class Producto {
     public Producto() {}
 
     // Getters y Setters
+    public Long getId() {
+        return id;
+    }
+
+    public void setId(Long id) {
+        this.id = id;
+    }
+
     public String getCodigoBarras() {
         return codigoBarras;
     }

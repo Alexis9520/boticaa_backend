@@ -280,6 +280,7 @@ public class ProductoService {
 
     public ProductoResponse toProductoResponse(Producto producto) {
         ProductoResponse resp = new ProductoResponse();
+        resp.setId(producto.getId());
         resp.setCodigoBarras(producto.getCodigoBarras());
         resp.setNombre(producto.getNombre());
         resp.setConcentracion(producto.getConcentracion());
