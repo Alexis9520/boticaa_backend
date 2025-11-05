@@ -16,7 +16,7 @@ public class DetalleBoleta {
     private Boleta boleta;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "codigo_barras", referencedColumnName = "codigo_barras")
+    @JoinColumn(name = "producto_id", referencedColumnName = "id")
     private Producto producto;
 
     private Integer cantidad;

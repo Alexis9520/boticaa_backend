@@ -139,7 +139,7 @@ public class ReportsService {
              COALESCE(SUM(d.cantidad),0) AS unidades,
              COALESCE(SUM(d.cantidad * d.precio_unitario),0) AS ventas
       FROM detalles_boleta d
-      JOIN productos p ON p.codigo_barras = d.codigo_barras
+      JOIN productos p ON p.id = d.producto_id
       JOIN boletas b ON b.id = d.boleta_id
       WHERE (? IS NULL OR b.fecha_venta >= ?)
         AND (? IS NULL OR b.fecha_venta <= ?)
@@ -309,7 +309,7 @@ public class ReportsService {
                        THEN SUM(COALESCE(s.cantidad_unidades,0) * COALESCE(s.precio_compra,0)) / SUM(COALESCE(s.cantidad_unidades,0))
                        ELSE NULL END AS costo_promedio
                 FROM productos p
-                LEFT JOIN stock s ON s.producto_id = p.codigo_barras
+                LEFT JOIN stock s ON s.producto_id = p.id
                 """ +
                         where +
                         """
@@ -368,7 +368,7 @@ public class ReportsService {
                        THEN SUM(COALESCE(s.cantidad_unidades,0) * COALESCE(s.precio_compra,0)) / SUM(COALESCE(s.cantidad_unidades,0))
                        ELSE NULL END AS costo_promedio
                 FROM productos p
-                LEFT JOIN stock s ON s.producto_id = p.codigo_barras
+                LEFT JOIN stock s ON s.producto_id = p.id
                 """;
 
         String groupBy =

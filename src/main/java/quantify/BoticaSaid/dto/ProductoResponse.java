@@ -4,6 +4,7 @@ import java.math.BigDecimal;
 import java.util.List;
 
 public class ProductoResponse {
+    private Long id;
     private String codigoBarras;
     private String nombre;
     private String concentracion;
@@ -38,6 +39,14 @@ public class ProductoResponse {
 
     public void setTipoMedicamento(String tipoMedicamento) {
         this.tipoMedicamento = tipoMedicamento;
+    }
+
+    public Long getId() {
+        return id;
+    }
+
+    public void setId(Long id) {
+        this.id = id;
     }
 
     public String getCodigoBarras() {
