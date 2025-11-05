@@ -4,6 +4,7 @@ import java.math.BigDecimal;
 import java.util.List;
 
 public class ProductoRequest {
+    private Long id;
     private String codigoBarras;
     private String nombre;
     private String concentracion;
@@ -24,6 +25,15 @@ public class ProductoRequest {
     private List<StockRequest> stocks;
 
     // Getters y setters
+
+
+    public Long getId() {
+        return id;
+    }
+
+    public void setId(Long id) {
+        this.id = id;
+    }
 
     public String getPrincipioActivo() {
         return principioActivo;

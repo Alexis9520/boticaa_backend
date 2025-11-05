@@ -56,11 +56,15 @@ public interface ProductoRepository extends JpaRepository<Producto, Long> {
             SELECT p.nombre, SUM(d.cantidad) AS totalVendidas,
               (SUM(d.cantidad) * 100.0 / (SELECT SUM(d2.cantidad) FROM detalles_boleta d2)) AS porcentaje
             FROM detalles_boleta d
-            JOIN productos p ON d.codigo_barras = p.codigo_barras
-            GROUP BY p.codigo_barras, p.nombre
+            JOIN productos p ON d.producto_id = p.id
+            GROUP BY p.id, p.nombre
             ORDER BY totalVendidas DESC
             """,
             nativeQuery = true
     )
     List<Object[]> findProductosMasVendidos(Pageable pageable);
+
+    @Query("SELECT p FROM Producto p LEFT JOIN FETCH p.stocks WHERE p.id = :id")
+    Optional<Producto> findByIdWithStocks(@Param("id") Long id);
+
 }

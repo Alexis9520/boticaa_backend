@@ -55,6 +55,8 @@ public class SecurityConfig {
                     config.setAllowCredentials(true);
                     return config;
                 }))
+                // Permitir que el H2 console sea renderizado en iframe
+                .headers(headers -> headers.frameOptions(frame -> frame.disable()))
                 .exceptionHandling(e -> e
                         .accessDeniedHandler((req, res, ex) -> {
                             var a = org.springframework.security.core.context.SecurityContextHolder.getContext().getAuthentication();
@@ -78,6 +80,7 @@ public class SecurityConfig {
 
                         // Públicos
                         .requestMatchers(
+                                "/h2-console/**",
                                 "/auth/*",
                                 "/rico/*",
                                 "/v3/api-docs/**",
