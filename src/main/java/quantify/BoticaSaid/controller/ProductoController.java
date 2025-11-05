@@ -105,12 +105,12 @@ public class ProductoController {
         }
     }
 
-    @PutMapping("/{codigoBarras}")
-    public ResponseEntity<ProductoResponse> actualizarPorCodigoBarras(
-            @PathVariable String codigoBarras,
+    @PutMapping("/{id}")
+    public ResponseEntity<ProductoResponse> actualizarPorid(
+            @PathVariable Long id,
             @RequestBody ProductoRequest request) {
 
-        Producto actualizado = productoService.actualizarPorCodigoBarras(codigoBarras, request);
+        Producto actualizado = productoService.actualizarPorID(id, request);
 
         if (actualizado != null) {
             ProductoResponse resp = productoService.toProductoResponse(actualizado);
@@ -119,6 +119,7 @@ public class ProductoController {
             return ResponseEntity.notFound().build();
         }
     }
+
 
     @GetMapping("/stock-bajo")
     public ResponseEntity<List<ProductoResponse>> productosConStockBajo(

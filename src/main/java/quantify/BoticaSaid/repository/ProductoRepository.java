@@ -63,4 +63,8 @@ public interface ProductoRepository extends JpaRepository<Producto, Long> {
             nativeQuery = true
     )
     List<Object[]> findProductosMasVendidos(Pageable pageable);
+
+    @Query("SELECT p FROM Producto p LEFT JOIN FETCH p.stocks WHERE p.id = :id")
+    Optional<Producto> findByIdWithStocks(@Param("id") Long id);
+
 }

@@ -245,6 +245,57 @@ public class ProductoService {
         }
         return null;
     }
+    @Transactional
+    public Producto actualizarPorID(Long id, ProductoRequest request) {
+        // Buscar producto o lanzar excepción si no existe
+        Producto producto = productoRepository.findById(id)
+                .orElseThrow(() -> new IllegalArgumentException("Producto no encontrado con id: " + id));
+
+        if (!producto.isActivo()) {
+            throw new IllegalArgumentException("No se puede actualizar un producto inactivo");
+        }
+
+        // Actualizar campos básicos
+        producto.setCodigoBarras(request.getCodigoBarras());
+        producto.setNombre(request.getNombre());
+        producto.setConcentracion(request.getConcentracion());
+        producto.setCantidadGeneral(request.getCantidadGeneral());
+        producto.setPrecioVentaUnd(request.getPrecioVentaUnd());
+        producto.setDescuento(request.getDescuento());
+        producto.setLaboratorio(request.getLaboratorio());
+        producto.setCategoria(request.getCategoria());
+        producto.setCantidadUnidadesBlister(request.getCantidadUnidadesBlister());
+        producto.setPrecioVentaBlister(request.getPrecioVentaBlister());
+        producto.setCantidadMinima(request.getCantidadMinima());
+        producto.setPrincipioActivo(request.getPrincipioActivo());
+        producto.setTipoMedicamento(request.getTipoMedicamento());
+        producto.setPresentacion(request.getPresentacion());
+
+        // Reemplazar stocks: requiere cascade = ALL y orphanRemoval = true en Producto.stocks
+        producto.getStocks().clear();
+
+        if (request.getStocks() != null && !request.getStocks().isEmpty()) {
+            for (var stockReq : request.getStocks()) {
+                Stock stock = new Stock();
+                // no seteamos id para crear nuevos registros; si quieres actualizar por id
+                // tendrías que buscar cada stock por id y actualizarlo en vez de crear nuevos
+                stock.setCodigoStock(stockReq.getCodigoStock());
+                stock.setCantidadUnidades(stockReq.getCantidadUnidades());
+                stock.setFechaVencimiento(stockReq.getFechaVencimiento());
+                stock.setPrecioCompra(stockReq.getPrecioCompra());
+                stock.setProducto(producto);
+                producto.getStocks().add(stock);
+            }
+        }
+
+        // Guardar cambios
+        Producto guardado = productoRepository.save(producto);
+
+        // Devolver el producto con stocks precargados (añadimos método en repo)
+        return productoRepository.findByIdWithStocks(guardado.getId()).orElse(guardado);
+    }
+
+
 
     // 8. Buscar productos con stock menor a cierto umbral con stocks
     public List<Producto> buscarProductosConStockMenorA(int umbral) {
