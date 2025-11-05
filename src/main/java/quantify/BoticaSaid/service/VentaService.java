@@ -344,7 +344,7 @@ public class VentaService {
     // Clientes atendidos hoy
     public int getClientesAtendidosHoy() {
         LocalDateTime inicioDia = LocalDateTime.now(ZoneId.of("America/Lima")).toLocalDate().atStartOfDay();
-        return boletaRepository.countDistinctDniClienteByFechaVentaAfter(inicioDia).orElse(0);
+        return boletaRepository.countDistinctNombreClienteByFechaVentaAfter(inicioDia).orElse(0);
     }
 
     // Variación de clientes atendidos (respecto a ayer)

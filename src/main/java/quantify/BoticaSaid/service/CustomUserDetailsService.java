@@ -21,16 +21,12 @@ public class CustomUserDetailsService implements UserDetailsService {
         Usuario usuario = usuarioRepo.findByDni(dni)
                 .orElseThrow(() -> new UsernameNotFoundException("Usuario no encontrado con DNI: " + dni));
 
+        // MODO A: rol con prefijo ROLE_
         return new User(
                 usuario.getDni(),
                 usuario.getContrasena(),
-                true, // enabled
-                true, // accountNonExpired
-                true, // credentialsNonExpired
-                true, // accountNonLocked
-                Collections.singletonList(
-                        new SimpleGrantedAuthority("ROLE_" + usuario.getRol().name())
-                )
+                true, true, true, true,
+                Collections.singletonList(new SimpleGrantedAuthority("ROLE_" + usuario.getRol().name()))
         );
     }
 }

@@ -47,21 +47,22 @@ public class CajaController {
     }
 
     /**
-     * Historial de cajas.
-     * @param conMovimientos si true incluirá los movimientos de cada caja (por defecto solo manuales).
-     * @param soloManuales   si conMovimientos=true y soloManuales=false incluiría también futuros movimientos no manuales (si existieran).
+     * Historial de cajas PAGINADO.
+     * - conMovimientos=false: no incluye movimientos (rápido).
+     * - conMovimientos=true: incluye movimientos; si soloManuales=false también incluiría no manuales.
      */
     @GetMapping("/historial")
-    public ResponseEntity<List<CajaResumenDTO>> obtenerHistorialCajas(
+    public ResponseEntity<PageResponse<CajaResumenDTO>> obtenerHistorialCajas(
             @RequestParam(defaultValue = "false") boolean conMovimientos,
-            @RequestParam(defaultValue = "true") boolean soloManuales
+            @RequestParam(defaultValue = "true") boolean soloManuales,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "20") int size
     ) {
-        List<CajaResumenDTO> historial = conMovimientos
-                ? cajaService.obtenerHistorialCajasConMovimientos(soloManuales)
-                : cajaService.obtenerHistorialCajas();
+        PageResponse<CajaResumenDTO> historial = conMovimientos
+                ? cajaService.obtenerHistorialCajasConMovimientosPaginado(soloManuales, page, size)
+                : cajaService.obtenerHistorialCajasPaginado(page, size);
 
-        if (historial.isEmpty()) {
-            // Opcional: puedes devolver siempre 200 con [] si prefieres.
+        if (historial.content == null || historial.content.isEmpty()) {
             return ResponseEntity.noContent().build();
         }
         return ResponseEntity.ok(historial);
@@ -85,6 +86,7 @@ public class CajaController {
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("Error: " + e.getMessage());
         }
     }
+
     @GetMapping("/{cajaId}/movimientos")
     public ResponseEntity<List<MovimientoDTO>> obtenerMovimientosCaja(
             @PathVariable Integer cajaId,

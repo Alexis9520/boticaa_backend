@@ -4,6 +4,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.http.HttpMethod;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.AuthenticationProvider;
 import org.springframework.security.authentication.dao.DaoAuthenticationProvider;
@@ -15,8 +16,7 @@ import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 import quantify.BoticaSaid.jwt.JwtAuthenticationFilter;
 import quantify.BoticaSaid.service.CustomUserDetailsService;
-import quantify.BoticaSaid.config.security.TurnoCajaFilter;
-
+import jakarta.servlet.http.HttpServletResponse;
 
 @Configuration
 public class SecurityConfig {
@@ -31,26 +31,52 @@ public class SecurityConfig {
         this.jwtAuthFilter = jwtAuthFilter;
     }
 
-    // Declara el filtro como Bean para que Spring lo inyecte correctamente
     @Bean
     public SecurityFilterChain securityFilterChain(
             HttpSecurity http,
             TurnoCajaFilter turnoCajaFilter
     ) throws Exception {
-        log.info("Cargando configuración de seguridad: endpoints públicos configurados para /auth/*, /rico/*, /v3/api-docs/**, /swagger-ui.html, /swagger-ui/**, /swagger-ui/index.html");
+        log.info("Cargando configuración de seguridad");
+
         http
                 .csrf(csrf -> csrf.disable())
-                .cors(cors -> cors
-                        .configurationSource(request -> {
-                            org.springframework.web.cors.CorsConfiguration config = new org.springframework.web.cors.CorsConfiguration();
-                            config.setAllowedOrigins(java.util.List.of("http://localhost:3000", "http://localhost:4000", "http://localhost:8080", "http://192.168.1.11:3000", "http://192.168.56.1:3000", "http://51.161.10.179:3000","http://51.161.10.179:5000","http://51.161.10.179", "https://109.199.106.139:3000", "http://109.199.106.139:3000", "http://109.199.106.139", "https://109.199.106.139", "http://109.199.106.139:5000", "http://boticasaid.quantify.net.pe"));
-                            config.setAllowedMethods(java.util.List.of("GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"));
-                            config.setAllowedHeaders(java.util.List.of("*"));
-                            config.setAllowCredentials(true);
-                            return config;
+                .cors(cors -> cors.configurationSource(request -> {
+                    org.springframework.web.cors.CorsConfiguration config = new org.springframework.web.cors.CorsConfiguration();
+                    config.setAllowedOrigins(java.util.List.of(
+                            "http://localhost:3000", "http://37.60.233.86:6969", "http://localhost:8080",
+                            "http://192.168.1.11:3000", "http://192.168.56.1:3000",
+                            "http://51.161.10.179:3000", "http://51.161.10.179:5000", "http://51.161.10.179",
+                            "https://109.199.106.139:3000", "http://109.199.106.139:3000",
+                            "http://109.199.106.139", "https://109.199.106.139",
+                            "http://109.199.106.139:5000", "http://boticasaid.quantify.net.pe", "https://boticasaid.quantify.net.pe"
+                    ));
+                    config.setAllowedMethods(java.util.List.of("GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"));
+                    config.setAllowedHeaders(java.util.List.of("*"));
+                    config.setAllowCredentials(true);
+                    return config;
+                }))
+                .exceptionHandling(e -> e
+                        .accessDeniedHandler((req, res, ex) -> {
+                            var a = org.springframework.security.core.context.SecurityContextHolder.getContext().getAuthentication();
+                            org.slf4j.LoggerFactory.getLogger("SEC-ACCESSDENIED").warn(
+                                    "Denied {} {} principal={} authorities={}",
+                                    req.getMethod(), req.getRequestURI(),
+                                    a != null ? a.getName() : "null",
+                                    a != null ? a.getAuthorities() : "null",
+                                    ex
+                            );
+                            res.setStatus(HttpServletResponse.SC_FORBIDDEN);
+                            res.setContentType("application/json");
+                            res.getWriter().write("{\"message\":\"Acceso denegado\"}");
                         })
                 )
                 .authorizeHttpRequests(auth -> auth
+                        .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
+
+                        // Reportes: solo autenticado (cualquier rol)
+                        .requestMatchers("/api/reports/**").authenticated()
+
+                        // Públicos
                         .requestMatchers(
                                 "/auth/*",
                                 "/rico/*",
@@ -60,10 +86,14 @@ public class SecurityConfig {
                                 "/swagger-ui/**",
                                 "/swagger-ui/index.html"
                         ).permitAll()
+
+                        // Resto autenticado
                         .anyRequest().authenticated()
                 )
+                // Filtros
                 .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class)
                 .addFilterAfter(turnoCajaFilter, JwtAuthenticationFilter.class);
+
 
         return http.build();
     }

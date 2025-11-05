@@ -1,5 +1,7 @@
 package quantify.BoticaSaid.service;
 
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import quantify.BoticaSaid.dto.*;
@@ -136,10 +138,9 @@ public class CajaService {
 
     @Transactional(readOnly = true)
     public List<CajaResumenDTO> obtenerHistorialCajas() {
-        // Orden descendente si tienes el método en repositorio
         List<Caja> cajas = cajaRepository.findAllByOrderByFechaAperturaDesc();
         return cajas.stream()
-                .map(this::convertirCajaAResumen)
+                .map(c -> convertirCajaAResumen(c, true)) // legacy: incluye movimientos manuales
                 .toList();
     }
 
@@ -148,21 +149,70 @@ public class CajaService {
         List<Caja> cajas = cajaRepository.findAllByOrderByFechaAperturaDesc();
         return cajas.stream()
                 .map(caja -> {
-                    CajaResumenDTO dto = convertirCajaAResumen(caja); // ya trae movimientos manuales
+                    // base sin movimientos (para no duplicar trabajo)
+                    CajaResumenDTO dto = convertirCajaAResumen(caja, false);
                     if (!soloManuales) {
-                        // Reemplaza lista con todos los movimientos
                         var todos = movimientoEfectivoRepository.findByCaja(caja);
                         var movDtos = todos.stream()
                                 .sorted(Comparator.comparing(MovimientoEfectivo::getFecha))
                                 .map(this::mapMovimientoBasico)
                                 .toList();
                         dto.setMovimientos(movDtos);
+                    } else {
+                        var manuales = movimientoEfectivoRepository.findByCajaAndEsManual(caja, true);
+                        var movDtos = manuales.stream()
+                                .sorted(Comparator.comparing(MovimientoEfectivo::getFecha))
+                                .map(this::mapMovimientoBasico)
+                                .toList();
+                        dto.setMovimientos(movDtos);
                     }
-                    // asegurar id
-                    if (dto.getId() == null) dto.setId(caja.getId());
+                    if (dto.getId() == null && caja.getId() != null) dto.setId(caja.getId().intValue());
                     return dto;
                 })
                 .toList();
+    }
+
+    /* ===================== Historial PAGINADO ===================== */
+
+    @Transactional(readOnly = true)
+    public PageResponse<CajaResumenDTO> obtenerHistorialCajasPaginado(int page, int size) {
+        Page<Caja> cajas = cajaRepository.findAllByOrderByFechaAperturaDesc(PageRequest.of(page, size));
+        List<CajaResumenDTO> content = cajas.getContent().stream()
+                .map(c -> convertirCajaAResumen(c, false)) // listado: sin movimientos => mucho más rápido
+                .toList();
+        long total = cajas.getTotalElements();
+        int totalPages = cajas.getTotalPages();
+        return PageResponse.of(content, total, page, size, totalPages);
+    }
+
+    @Transactional(readOnly = true)
+    public PageResponse<CajaResumenDTO> obtenerHistorialCajasConMovimientosPaginado(boolean soloManuales, int page, int size) {
+        Page<Caja> cajas = cajaRepository.findAllByOrderByFechaAperturaDesc(PageRequest.of(page, size));
+        List<CajaResumenDTO> content = cajas.getContent().stream()
+                .map(caja -> {
+                    CajaResumenDTO dto = convertirCajaAResumen(caja, false);
+                    if (!soloManuales) {
+                        var todos = movimientoEfectivoRepository.findByCaja(caja);
+                        var movDtos = todos.stream()
+                                .sorted(Comparator.comparing(MovimientoEfectivo::getFecha))
+                                .map(this::mapMovimientoBasico)
+                                .toList();
+                        dto.setMovimientos(movDtos);
+                    } else {
+                        var manuales = movimientoEfectivoRepository.findByCajaAndEsManual(caja, true);
+                        var movDtos = manuales.stream()
+                                .sorted(Comparator.comparing(MovimientoEfectivo::getFecha))
+                                .map(this::mapMovimientoBasico)
+                                .toList();
+                        dto.setMovimientos(movDtos);
+                    }
+                    if (dto.getId() == null && caja.getId() != null) dto.setId(caja.getId().intValue());
+                    return dto;
+                })
+                .toList();
+        long total = cajas.getTotalElements();
+        int totalPages = cajas.getTotalPages();
+        return PageResponse.of(content, total, page, size, totalPages);
     }
 
     @Transactional(readOnly = true)
@@ -185,7 +235,6 @@ public class CajaService {
 
     /* ===================== Movimientos ===================== */
 
-    // MÉTODO QUE TE FALTA (firma exacta que invoca el controller)
     @Transactional
     public void registrarMovimientoManual(MovimientoEfectivoDTO dto) {
         Usuario usuario = usuarioRepository.findByDni(dto.getDniUsuario())
@@ -196,8 +245,8 @@ public class CajaService {
 
         MovimientoEfectivo mov = new MovimientoEfectivo();
         mov.setCaja(caja);
-        mov.setTipo(MovimientoEfectivo.TipoMovimiento.valueOf(dto.getTipo().toUpperCase())); // normaliza
-        mov.setMonto(dto.getMonto()); // <-- sin valueOf
+        mov.setTipo(MovimientoEfectivo.TipoMovimiento.valueOf(dto.getTipo().toUpperCase()));
+        mov.setMonto(dto.getMonto());
         mov.setDescripcion(dto.getDescripcion());
         mov.setFecha(LocalDateTime.now(ZoneId.of("America/Lima")));
         mov.setUsuario(usuario);
@@ -205,11 +254,9 @@ public class CajaService {
         movimientoEfectivoRepository.save(mov);
     }
 
-    // (Opcional) Variante que devuelve el DTO creado
     @Transactional
     public MovimientoDTO registrarMovimientoManualYDevolver(MovimientoEfectivoDTO dto) {
         registrarMovimientoManual(dto);
-        // Recuperar último manual registrado (simple, podrías optimizar)
         Usuario usuario = usuarioRepository.findByDni(dto.getDniUsuario()).orElseThrow();
         Caja caja = cajaRepository.findByUsuarioAndFechaCierreIsNull(usuario).orElse(null);
         if (caja == null) return null;
@@ -221,8 +268,16 @@ public class CajaService {
 
     /* ===================== Conversión / Cálculo ===================== */
 
+    // Versión completa (por compatibilidad)
     public CajaResumenDTO convertirCajaAResumen(Caja caja) {
-        List<MovimientoEfectivo> movimientosManual = movimientoEfectivoRepository.findByCajaAndEsManual(caja, true);
+        return convertirCajaAResumen(caja, true);
+    }
+
+    // Nueva: permite evitar cargar movimientos en listados
+    public CajaResumenDTO convertirCajaAResumen(Caja caja, boolean incluirMovsManuales) {
+        List<MovimientoEfectivo> movimientosManual = incluirMovsManuales
+                ? movimientoEfectivoRepository.findByCajaAndEsManual(caja, true)
+                : List.of();
 
         BigDecimal ingresos = movimientosManual.stream()
                 .filter(m -> m.getTipo() == MovimientoEfectivo.TipoMovimiento.INGRESO)
@@ -271,12 +326,12 @@ public class CajaService {
 
         BigDecimal totalYape = ventasYape.add(ventasMixtoDigital);
 
-        List<MovimientoDTO> movimientosDTO = movimientosManual.stream()
-                .map(this::mapMovimientoBasico)
-                .toList();
+        List<MovimientoDTO> movimientosDTO = incluirMovsManuales
+                ? movimientosManual.stream().map(this::mapMovimientoBasico).toList()
+                : List.of();
 
         CajaResumenDTO dto = new CajaResumenDTO();
-        dto.setId(caja.getId());
+        dto.setId(caja.getId() == null ? null : caja.getId().intValue());
         dto.setEfectivoInicial(caja.getEfectivoInicial());
         dto.setEfectivoFinal(caja.getEfectivoFinal());
         dto.setIngresos(ingresos);

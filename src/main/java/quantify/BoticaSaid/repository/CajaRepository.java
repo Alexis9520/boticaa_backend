@@ -1,5 +1,7 @@
 package quantify.BoticaSaid.repository;
 
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -15,16 +17,18 @@ public interface CajaRepository extends JpaRepository<Caja, Long> {
 
     boolean existsByUsuarioAndFechaCierreIsNull(Usuario usuario);
 
-
     Optional<Caja> findByUsuarioAndFechaCierreIsNull(Usuario usuario);
 
     @Query("SELECT c FROM Caja c WHERE c.usuario.dni = :dni AND c.fechaCierre IS NULL")
     Optional<Caja> findCajaAbiertaPorDniUsuario(@Param("dni") String dni);
+
     List<Caja> findByFechaCierreIsNull();
 
     Optional<Caja> findFirstByFechaCierreIsNullOrderByFechaAperturaDesc();
 
-    // NUEVO: para historial ordenado (más reciente primero)
+    // Legacy (no recomendado para grandes volúmenes)
     List<Caja> findAllByOrderByFechaAperturaDesc();
-}
 
+    // Paginado
+    Page<Caja> findAllByOrderByFechaAperturaDesc(Pageable pageable);
+}

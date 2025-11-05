@@ -8,19 +8,16 @@ import org.springframework.data.jpa.domain.Specification;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import quantify.BoticaSaid.dto.BoletaResponseDTO;
+import quantify.BoticaSaid.dto.PageResponse;
 import quantify.BoticaSaid.dto.DetalleProductoDTO;
 import quantify.BoticaSaid.model.Boleta;
-import quantify.BoticaSaid.model.DetalleBoleta;
 import quantify.BoticaSaid.repository.BoletaRepository;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.time.format.DateTimeFormatter;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
-import java.util.stream.Collectors;
 
 @RestController
 @RequestMapping("/api/boletas")
@@ -32,82 +29,123 @@ public class BoletaController {
         this.boletaRepository = boletaRepository;
     }
 
+    /**
+     * Listado paginado de boletas (sin detalles).
+     * Contrato estándar:
+     * - page: 0-based
+     * - size: tamaño de página
+     * - content/totalElements/page/size/totalPages
+     * Filtros: search (o q), from (yyyy-MM-dd), to (yyyy-MM-dd)
+     */
     @GetMapping
-    public ResponseEntity<Map<String, Object>> listarBoletas(
-            @RequestParam(defaultValue = "1") int page,
-            @RequestParam(defaultValue = "10") int limit,
+    public ResponseEntity<PageResponse<BoletaResponseDTO>> listarBoletas(
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "20") int size,
             @RequestParam(required = false) String search,
+            @RequestParam(required = false) String q,
             @RequestParam(required = false) String from,
             @RequestParam(required = false) String to
     ) {
-        Pageable pageable = PageRequest.of(page - 1, limit, Sort.by(Sort.Direction.DESC, "fechaVenta"));
+        Pageable pageable = PageRequest.of(Math.max(0, page), Math.max(1, size), Sort.by(Sort.Direction.DESC, "fechaVenta"));
 
-        Specification<Boleta> spec = null;
+        String term = (search != null && !search.isBlank()) ? search : (q != null ? q : null);
 
-        if (search != null && !search.isEmpty()) {
-            Specification<Boleta> filtro = (root, query, cb) ->
-                    cb.or(
-                            cb.like(cb.lower(root.get("nombreCliente")), "%" + search.toLowerCase() + "%"),
-                            cb.like(cb.lower(root.get("numero")), "%" + search.toLowerCase() + "%"),
-                            cb.like(cb.lower(root.get("id").as(String.class)), "%" + search.toLowerCase() + "%")
-                    );
-            spec = (spec == null) ? filtro : spec.and(filtro);
+        Specification<Boleta> spec = Specification.allOf();
+
+        if (term != null && !term.isBlank()) {
+            String like = "%" + term.trim().toLowerCase() + "%";
+            spec = spec.and((root, query, cb) -> cb.or(
+                    cb.like(cb.lower(root.get("nombreCliente")), like),
+                    cb.like(cb.lower(root.get("numero")), like),
+                    cb.like(cb.lower(root.get("id").as(String.class)), like)
+            ));
         }
-        if (from != null && !from.isEmpty()) {
-            LocalDateTime fromDateTime = LocalDate.parse(from).atStartOfDay();
-            Specification<Boleta> filtro = (root, query, cb) ->
-                    cb.greaterThanOrEqualTo(root.get("fechaVenta"), fromDateTime);
-            spec = (spec == null) ? filtro : spec.and(filtro);
+        if (from != null && !from.isBlank()) {
+            try {
+                LocalDateTime fromDateTime = LocalDate.parse(from).atStartOfDay();
+                spec = spec.and((root, query, cb) -> cb.greaterThanOrEqualTo(root.get("fechaVenta"), fromDateTime));
+            } catch (Exception ignored) {}
         }
-        if (to != null && !to.isEmpty()) {
-            LocalDateTime toDateTime = LocalDate.parse(to).atTime(LocalTime.MAX);
-            Specification<Boleta> filtro = (root, query, cb) ->
-                    cb.lessThanOrEqualTo(root.get("fechaVenta"), toDateTime);
-            spec = (spec == null) ? filtro : spec.and(filtro);
+        if (to != null && !to.isBlank()) {
+            try {
+                LocalDateTime toDateTime = LocalDate.parse(to).atTime(LocalTime.MAX);
+                spec = spec.and((root, query, cb) -> cb.lessThanOrEqualTo(root.get("fechaVenta"), toDateTime));
+            } catch (Exception ignored) {}
         }
 
-        Page<Boleta> boletaPage = boletaRepository.findAll(spec, pageable);
+        // Precarga to-one para evitar N+1 en usuario/metodoPago. Evitamos detalles (colección) en el listado.
+        Page<Boleta> pageBoletas = boletaRepository.findAllWithUsuarioAndMetodo(spec, pageable);
 
-        // Formato de fecha bonito
         DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
 
-        List<BoletaResponseDTO> boletas = boletaPage.getContent().stream().map(boleta -> {
+        List<BoletaResponseDTO> content = pageBoletas.getContent().stream().map(b -> {
             BoletaResponseDTO dto = new BoletaResponseDTO();
-            dto.setId(boleta.getId() != null ? boleta.getId().longValue() : null);
-            dto.setNumero(boleta.getNumero());
-            dto.setFecha(boleta.getFechaVenta() != null ? boleta.getFechaVenta().format(formatter) : "");
-            dto.setCliente(boleta.getNombreCliente());
-            dto.setTotalCompra(boleta.getTotalCompra());
-            dto.setVuelto(boleta.getVuelto());
+            dto.setId(b.getId() != null ? b.getId().longValue() : null);
+            dto.setNumero(b.getNumero());
+            dto.setFecha(b.getFechaVenta() != null ? b.getFechaVenta().format(formatter) : "");
+            dto.setCliente(b.getNombreCliente());
+            dto.setTotalCompra(b.getTotalCompra());
+            dto.setVuelto(b.getVuelto());
             dto.setMetodoPago(
-                    (boleta.getMetodoPago() != null && boleta.getMetodoPago().getNombre() != null)
-                            ? boleta.getMetodoPago().getNombre().toString()
+                    (b.getMetodoPago() != null && b.getMetodoPago().getNombre() != null)
+                            ? b.getMetodoPago().getNombre().toString()
                             : ""
             );
-            dto.setUsuario(
-                    boleta.getUsuario() != null ? boleta.getUsuario().getNombreCompleto() : ""
-            );
-            List<DetalleProductoDTO> productosVendidos = boleta.getDetalles() != null
-                    ? boleta.getDetalles().stream().map((DetalleBoleta detalle) -> {
-                DetalleProductoDTO prodDto = new DetalleProductoDTO();
-                if (detalle.getProducto() != null) {
-                    prodDto.setCodBarras(detalle.getProducto().getCodigoBarras());
-                    prodDto.setNombre(detalle.getProducto().getNombre());
-                }
-                prodDto.setCantidad(detalle.getCantidad());
-                prodDto.setPrecio(detalle.getPrecioUnitario());
-                return prodDto;
-            }).collect(Collectors.toList())
-                    : List.of();
-            dto.setProductos(productosVendidos);
-
+            dto.setUsuario(b.getUsuario() != null ? b.getUsuario().getNombreCompleto() : "");
+            // Listado sin productos
             return dto;
-        }).collect(Collectors.toList());
+        }).toList();
 
-        Map<String, Object> response = new HashMap<>();
-        response.put("boletas", boletas);
-        response.put("total", boletaPage.getTotalElements());
+        return ResponseEntity.ok(
+                PageResponse.of(
+                        content,
+                        pageBoletas.getTotalElements(),
+                        pageBoletas.getNumber(),
+                        pageBoletas.getSize(),
+                        pageBoletas.getTotalPages()
+                )
+        );
+    }
 
-        return ResponseEntity.ok(response);
+    /**
+     * NUEVO: Obtener boleta por ID con productos (para expand del front).
+     */
+    @GetMapping("/{id}")
+    public ResponseEntity<BoletaResponseDTO> obtenerPorId(@PathVariable Integer id) {
+        var opt = boletaRepository.findByIdWithDetalles(id);
+        if (opt.isEmpty()) return ResponseEntity.notFound().build();
+
+        var b = opt.get();
+        var fmt = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
+
+        var dto = new BoletaResponseDTO();
+        dto.setId(b.getId() != null ? b.getId().longValue() : null);
+        dto.setNumero(b.getNumero());
+        dto.setFecha(b.getFechaVenta() != null ? b.getFechaVenta().format(fmt) : "");
+        dto.setCliente(b.getNombreCliente());
+        dto.setTotalCompra(b.getTotalCompra());
+        dto.setVuelto(b.getVuelto());
+        dto.setMetodoPago(
+                (b.getMetodoPago() != null && b.getMetodoPago().getNombre() != null)
+                        ? b.getMetodoPago().getNombre().toString()
+                        : ""
+        );
+        dto.setUsuario(b.getUsuario() != null ? b.getUsuario().getNombreCompleto() : "");
+
+        List<DetalleProductoDTO> productos = b.getDetalles() == null ? List.of()
+                : b.getDetalles().stream().map(d -> {
+            var p = new DetalleProductoDTO();
+            if (d.getProducto() != null) {
+                p.setCodBarras(d.getProducto().getCodigoBarras());
+                p.setNombre(d.getProducto().getNombre());
+            }
+            p.setCantidad(d.getCantidad());
+            p.setPrecio(d.getPrecioUnitario());
+            return p;
+        }).toList();
+
+        dto.setProductos(productos);
+
+        return ResponseEntity.ok(dto);
     }
 }
