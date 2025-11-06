@@ -114,7 +114,17 @@ public class ProductoService {
         return guardado;
     }
 
-    // 2. Buscar producto por código de barras con stocks
+    // 2. Buscar producto por ID con stocks
+    public Producto buscarPorId(Long id) {
+        Optional<Producto> prodOpt = productoRepository.findByIdWithStocks(id);
+        if (prodOpt.isPresent() && prodOpt.get().isActivo()) {
+            return prodOpt.get();
+        }
+        Optional<Producto> prod = productoRepository.findById(id);
+        return (prod.isPresent() && prod.get().isActivo()) ? prod.get() : null;
+    }
+
+    // 3. Buscar producto por código de barras con stocks
     public Producto buscarPorCodigoBarras(String codigoBarras) {
         Optional<Producto> prodOpt = productoRepository.findByCodigoBarrasWithStocks(codigoBarras);
         if (prodOpt.isPresent() && prodOpt.get().isActivo()) {
@@ -124,7 +134,7 @@ public class ProductoService {
         return (prod != null && prod.isActivo()) ? prod : null;
     }
 
-    // 3. Listar todos los productos activos con stocks
+    // 4. Listar todos los productos activos con stocks
     public List<Producto> listarTodos() {
         try {
             List<Producto> productos = productoRepository.findByActivoTrueWithStocks();
@@ -134,11 +144,22 @@ public class ProductoService {
         }
     }
 
-    // 4. Agregar stock adicional
+    // 5. Agregar stock adicional
     @Transactional
     public boolean agregarStock(AgregarStockRequest request) {
-        Optional<Producto> prodOpt = productoRepository.findByCodigoBarrasWithStocks(request.getCodigoBarras());
-        Producto producto = prodOpt.orElseGet(() -> productoRepository.findByCodigoBarras(request.getCodigoBarras()));
+        Producto producto = null;
+        
+        // Intentar buscar por ID primero
+        if (request.getProductoId() != null) {
+            Optional<Producto> prodOpt = productoRepository.findByIdWithStocks(request.getProductoId());
+            producto = prodOpt.orElseGet(() -> productoRepository.findById(request.getProductoId()).orElse(null));
+        }
+        
+        // Si no se encontró por ID, buscar por código de barras
+        if (producto == null && request.getCodigoBarras() != null) {
+            Optional<Producto> prodOpt = productoRepository.findByCodigoBarrasWithStocks(request.getCodigoBarras());
+            producto = prodOpt.orElseGet(() -> productoRepository.findByCodigoBarras(request.getCodigoBarras()));
+        }
 
         if (producto == null || !producto.isActivo()) {
             return false;
@@ -158,7 +179,7 @@ public class ProductoService {
         return true;
     }
 
-    // 5. Buscar por nombre o categoría con stocks (legacy endpoint)
+    // 6. Buscar por nombre o categoría con stocks (legacy endpoint)
     public List<Producto> buscarPorNombreOCategoria(String nombre, String categoria) {
         try {
             List<Producto> todosConStocks = productoRepository.findByActivoTrueWithStocks();
@@ -191,8 +212,22 @@ public class ProductoService {
         }
     }
 
-    // 6. Borrado lógico (set activo=false)
+    // 7. Borrado lógico por ID (set activo=false)
     @Transactional
+    public boolean eliminarPorId(Long id) {
+        Optional<Producto> productoOpt = productoRepository.findById(id);
+        if (productoOpt.isPresent() && productoOpt.get().isActivo()) {
+            Producto producto = productoOpt.get();
+            producto.setActivo(false);
+            productoRepository.save(producto);
+            return true;
+        }
+        return false;
+    }
+
+    // 8. Borrado lógico por código de barras (set activo=false) - Deprecated, usar eliminarPorId
+    @Transactional
+    @Deprecated
     public boolean eliminarPorCodigoBarras(String codigoBarras) {
         Producto producto = productoRepository.findByCodigoBarras(codigoBarras);
         if (producto != null && producto.isActivo()) {
@@ -203,8 +238,9 @@ public class ProductoService {
         return false;
     }
 
-    // 7. Actualizar datos de un producto con stocks
+    // 9. Actualizar datos de un producto con stocks por código de barras - Deprecated, usar actualizarPorID
     @Transactional
+    @Deprecated
     public Producto actualizarPorCodigoBarras(String codigoBarras, ProductoRequest request) {
         Optional<Producto> prodOpt = productoRepository.findByCodigoBarrasWithStocks(codigoBarras);
         Producto producto = prodOpt.orElseGet(() -> productoRepository.findByCodigoBarras(codigoBarras));
@@ -245,6 +281,8 @@ public class ProductoService {
         }
         return null;
     }
+
+    // 10. Actualizar datos de un producto con stocks por ID
     @Transactional
     public Producto actualizarPorID(Long id, ProductoRequest request) {
         // Buscar producto o lanzar excepción si no existe
@@ -297,7 +335,7 @@ public class ProductoService {
 
 
 
-    // 8. Buscar productos con stock menor a cierto umbral con stocks
+    // 11. Buscar productos con stock menor a cierto umbral con stocks
     public List<Producto> buscarProductosConStockMenorA(int umbral) {
         try {
             List<Producto> productos = productoRepository.findByActivoTrueWithStocks();

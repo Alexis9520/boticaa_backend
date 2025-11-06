@@ -4,9 +4,14 @@ import com.fasterxml.jackson.annotation.JsonFormat;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 
+/**
+ * DTO para agregar stock a un producto
+ * Soporta búsqueda de producto por ID o código de barras
+ */
 public class AgregarStockRequest {
     private String codigoStock;
-    private String codigoBarras;
+    private Long productoId;  // ID del producto (alternativa a codigoBarras)
+    private String codigoBarras;  // Código de barras del producto (para escáneres)
     private int cantidadUnidades;
 
     @JsonFormat(pattern = "yyyy-MM-dd")
@@ -25,6 +30,14 @@ public class AgregarStockRequest {
 
     public void setCodigoStock(String codigoStock) {
         this.codigoStock = codigoStock;
+    }
+
+    public Long getProductoId() {
+        return productoId;
+    }
+
+    public void setProductoId(Long productoId) {
+        this.productoId = productoId;
     }
 
     public String getCodigoBarras() {

@@ -22,6 +22,12 @@ public class ProductoController {
     @Autowired
     private ProductoService productoService;
 
+    // ===== CREATE OPERATIONS =====
+
+    /**
+     * Crear un nuevo producto con stock inicial
+     * POST /productos/nuevo
+     */
     @PostMapping("/nuevo")
     public ResponseEntity<?> crearProducto(@RequestBody ProductoRequest request) {
         try {
@@ -40,6 +46,28 @@ public class ProductoController {
         }
     }
 
+    // ===== READ OPERATIONS =====
+
+    /**
+     * Obtener un producto por ID
+     * GET /productos/{id}
+     */
+    @GetMapping("/{id}")
+    public ResponseEntity<ProductoResponse> obtenerPorId(@PathVariable Long id) {
+        Producto producto = productoService.buscarPorId(id);
+        if (producto != null) {
+            ProductoResponse resp = productoService.toProductoResponse(producto);
+            return ResponseEntity.ok(resp);
+        } else {
+            return ResponseEntity.notFound().build();
+        }
+    }
+
+    /**
+     * Obtener un producto por código de barras
+     * GET /productos/codigo-barras/{codigo}
+     * Útil para escáneres de código de barras
+     */
     @GetMapping("/codigo-barras/{codigo}")
     public ResponseEntity<ProductoResponse> obtenerPorCodigoBarras(@PathVariable String codigo) {
         Producto producto = productoService.buscarPorCodigoBarras(codigo);
@@ -51,7 +79,10 @@ public class ProductoController {
         }
     }
 
-    // GET /productos with optional search q and optional lab/cat filters
+    /**
+     * Listar todos los productos con paginación y filtros opcionales
+     * GET /productos?q={texto}&lab={laboratorio}&cat={categoria}&page={page}&size={size}
+     */
     @GetMapping
     public ResponseEntity<Map<String, Object>> listarTodos(
             @RequestParam(required = false) String q,
@@ -76,14 +107,10 @@ public class ProductoController {
         return ResponseEntity.ok(response);
     }
 
-    @PostMapping("/agregar-stock")
-    public ResponseEntity<?> agregarStock(@RequestBody AgregarStockRequest request) {
-        boolean exito = productoService.agregarStock(request);
-        return exito
-                ? ResponseEntity.ok("Stock agregado correctamente.")
-                : ResponseEntity.badRequest().body("Producto no encontrado.");
-    }
-
+    /**
+     * Buscar productos por nombre o categoría
+     * GET /productos/buscar?nombre={nombre}&categoria={categoria}
+     */
     @GetMapping("/buscar")
     public ResponseEntity<List<ProductoResponse>> buscarPorNombreOCategoria(
             @RequestParam(required = false) String nombre,
@@ -95,18 +122,28 @@ public class ProductoController {
         return ResponseEntity.ok(productosRes);
     }
 
-    @DeleteMapping("/{codigoBarras}")
-    public ResponseEntity<?> eliminarPorCodigoBarras(@PathVariable String codigoBarras) {
-        boolean eliminado = productoService.eliminarPorCodigoBarras(codigoBarras);
-        if (eliminado) {
-            return ResponseEntity.ok().build();
-        } else {
-            return ResponseEntity.notFound().build();
-        }
+    /**
+     * Obtener productos con stock bajo
+     * GET /productos/stock-bajo?umbral={umbral}
+     */
+    @GetMapping("/stock-bajo")
+    public ResponseEntity<List<ProductoResponse>> productosConStockBajo(
+            @RequestParam(defaultValue = "10") int umbral) {
+        List<Producto> productos = productoService.buscarProductosConStockMenorA(umbral);
+        List<ProductoResponse> productosRes = productos.stream()
+                .map(productoService::toProductoResponse)
+                .toList();
+        return ResponseEntity.ok(productosRes);
     }
 
+    // ===== UPDATE OPERATIONS =====
+
+    /**
+     * Actualizar un producto por ID
+     * PUT /productos/{id}
+     */
     @PutMapping("/{id}")
-    public ResponseEntity<ProductoResponse> actualizarPorid(
+    public ResponseEntity<ProductoResponse> actualizarPorId(
             @PathVariable Long id,
             @RequestBody ProductoRequest request) {
 
@@ -120,14 +157,31 @@ public class ProductoController {
         }
     }
 
+    /**
+     * Agregar stock a un producto existente
+     * POST /productos/agregar-stock
+     */
+    @PostMapping("/agregar-stock")
+    public ResponseEntity<?> agregarStock(@RequestBody AgregarStockRequest request) {
+        boolean exito = productoService.agregarStock(request);
+        return exito
+                ? ResponseEntity.ok("Stock agregado correctamente.")
+                : ResponseEntity.badRequest().body("Producto no encontrado.");
+    }
 
-    @GetMapping("/stock-bajo")
-    public ResponseEntity<List<ProductoResponse>> productosConStockBajo(
-            @RequestParam(defaultValue = "10") int umbral) {
-        List<Producto> productos = productoService.buscarProductosConStockMenorA(umbral);
-        List<ProductoResponse> productosRes = productos.stream()
-                .map(productoService::toProductoResponse)
-                .toList();
-        return ResponseEntity.ok(productosRes);
+    // ===== DELETE OPERATIONS =====
+
+    /**
+     * Eliminar un producto por ID (borrado lógico)
+     * DELETE /productos/{id}
+     */
+    @DeleteMapping("/{id}")
+    public ResponseEntity<?> eliminarPorId(@PathVariable Long id) {
+        boolean eliminado = productoService.eliminarPorId(id);
+        if (eliminado) {
+            return ResponseEntity.ok().build();
+        } else {
+            return ResponseEntity.notFound().build();
+        }
     }
 }
