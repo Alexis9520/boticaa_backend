@@ -1,0 +1,141 @@
+name: CI/CD with SonarQube Analysis
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main, develop ]
+
+env:
+  JAVA_VERSION: '17'
+  MAVEN_OPTS: -Xmx3072m
+
+jobs:
+  test-and-sonar:
+    name: Test and SonarQube Analysis
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout Code
+      uses: actions/checkout@v4
+      with:
+        fetch-depth: 0  # Shallow clones should be disabled for better SonarQube analysis
+
+    - name: Set up JDK 17
+      uses: actions/setup-java@v4
+      with:
+        java-version: ${{ env.JAVA_VERSION }}
+        distribution: 'temurin'
+
+    - name: Cache Maven packages
+      uses: actions/cache@v4
+      with:
+        path: ~/.m2
+        key: ${{ runner.os }}-m2-${{ hashFiles('**/pom.xml') }}
+        restore-keys: ${{ runner.os }}-m2
+
+    - name: Cache SonarQube packages
+      uses: actions/cache@v4
+      with:
+        path: ~/.sonar/cache
+        key: ${{ runner.os }}-sonar
+        restore-keys: ${{ runner.os }}-sonar
+
+    - name: Make Maven wrapper executable
+      run: chmod +x ./mvnw
+
+    - name: Compile Project
+      run: ./mvnw clean compile -B
+
+    - name: Run Unit Tests
+      run: ./mvnw test -B
+
+    - name: Generate Test Report
+      run: ./mvnw jacoco:report -B
+
+    - name: SonarQube Analysis
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+        SONAR_HOST_URL: ${{ vars.SONAR_HOST_URL }}
+      run: |
+        if [ -z "$SONAR_TOKEN" ]; then
+          echo "⚠️  SONAR_TOKEN not found. Skipping SonarQube analysis."
+          echo "Please configure SONAR_TOKEN in repository secrets to enable SonarQube analysis."
+        elif [ -z "$SONAR_HOST_URL" ]; then
+          echo "⚠️  SONAR_HOST_URL not found. Skipping SonarQube analysis."
+          echo "Please configure SONAR_HOST_URL in repository variables to enable SonarQube analysis."
+        else
+          echo "🔍 Running SonarQube analysis..."
+          ./mvnw sonar:sonar \
+            -Dsonar.host.url=$SONAR_HOST_URL \
+            -Dsonar.token=$SONAR_TOKEN \
+            -Dsonar.projectKey=boticaa_backend \
+            -Dsonar.projectName="Botica API Backend" \
+            -Dsonar.projectVersion=0.0.1-SNAPSHOT
+        fi
+
+    - name: Upload Test Results
+      uses: actions/upload-artifact@v4
+      if: always()
+      with:
+        name: test-results
+        path: |
+          target/surefire-reports/
+          target/site/jacoco/
+        retention-days: 30
+
+    - name: Comment PR with SonarQube Results
+      if: github.event_name == 'pull_request' && env.SONAR_TOKEN != '' && env.SONAR_HOST_URL != ''
+      uses: actions/github-script@v7
+      env:
+        SONAR_HOST_URL: ${{ vars.SONAR_HOST_URL }}
+      with:
+        script: |
+          const sonarUrl = `${process.env.SONAR_HOST_URL}/dashboard?id=boticaa_backend`;
+          const comment = `## 🔍 SonarQube Analysis Complete
+          
+          The code quality analysis has been completed. You can view the detailed results here:
+          
+          🔗 [View SonarQube Report](${sonarUrl})
+          
+          ### What's Analyzed:
+          - Code Quality & Maintainability
+          - Security Vulnerabilities  
+          - Code Coverage
+          - Duplicated Code
+          - Technical Debt
+          
+          Please review the results and address any issues before merging.`;
+          
+          github.rest.issues.createComment({
+            issue_number: context.issue.number,
+            owner: context.repo.owner,
+            repo: context.repo.repo,
+            body: comment
+          });
+
+    - name: Quality Gate Check
+      if: env.SONAR_TOKEN != '' && env.SONAR_HOST_URL != ''
+      env:
+        SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+        SONAR_HOST_URL: ${{ vars.SONAR_HOST_URL }}
+      run: |
+        echo "⏳ Waiting for SonarQube Quality Gate result..."
+        sleep 10
+        
+        # Get project status from SonarQube API
+        QUALITY_GATE_STATUS=$(curl -s -u "$SONAR_TOKEN:" \
+          "$SONAR_HOST_URL/api/qualitygates/project_status?projectKey=boticaa_backend" \
+          | jq -r '.projectStatus.status // "NONE"')
+        
+        echo "Quality Gate Status: $QUALITY_GATE_STATUS"
+        
+        if [ "$QUALITY_GATE_STATUS" = "ERROR" ]; then
+          echo "❌ Quality Gate failed! Please check SonarQube report."
+          exit 1
+        elif [ "$QUALITY_GATE_STATUS" = "OK" ]; then
+          echo "✅ Quality Gate passed!"
+        else
+          echo "⚠️  Quality Gate status unknown or not available"
+        fi
