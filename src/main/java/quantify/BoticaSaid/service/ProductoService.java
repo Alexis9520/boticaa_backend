@@ -147,8 +147,19 @@ public class ProductoService {
     // 5. Agregar stock adicional
     @Transactional
     public boolean agregarStock(AgregarStockRequest request) {
-        Optional<Producto> prodOpt = productoRepository.findByCodigoBarrasWithStocks(request.getCodigoBarras());
-        Producto producto = prodOpt.orElseGet(() -> productoRepository.findByCodigoBarras(request.getCodigoBarras()));
+        Producto producto = null;
+        
+        // Intentar buscar por ID primero
+        if (request.getProductoId() != null) {
+            Optional<Producto> prodOpt = productoRepository.findByIdWithStocks(request.getProductoId());
+            producto = prodOpt.orElseGet(() -> productoRepository.findById(request.getProductoId()).orElse(null));
+        }
+        
+        // Si no se encontró por ID, buscar por código de barras
+        if (producto == null && request.getCodigoBarras() != null) {
+            Optional<Producto> prodOpt = productoRepository.findByCodigoBarrasWithStocks(request.getCodigoBarras());
+            producto = prodOpt.orElseGet(() -> productoRepository.findByCodigoBarras(request.getCodigoBarras()));
+        }
 
         if (producto == null || !producto.isActivo()) {
             return false;
