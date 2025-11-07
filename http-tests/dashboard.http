@@ -1,0 +1,127 @@
+### Dashboard and Analytics Tests
+### Base URL
+@baseUrl = http://localhost:8080
+@contentType = application/json
+
+### Variables
+@authToken = Bearer YOUR_TOKEN_HERE
+
+###############################################################################
+### 1. Get Dashboard Summary
+GET {{baseUrl}}/dashboard/resumen
+Authorization: {{authToken}}
+
+###############################################################################
+### 2. Get Today's Sales Summary
+GET {{baseUrl}}/dashboard/ventas/hoy
+Authorization: {{authToken}}
+
+###############################################################################
+### 3. Get Monthly Sales Summary
+GET {{baseUrl}}/dashboard/ventas/mes
+Authorization: {{authToken}}
+
+###############################################################################
+### 4. Get Current Cash Balance
+GET {{baseUrl}}/dashboard/caja/saldo
+Authorization: {{authToken}}
+
+###############################################################################
+### 5. Get Customers Served Today
+GET {{baseUrl}}/dashboard/clientes/hoy
+Authorization: {{authToken}}
+
+###############################################################################
+### 6. Get Recent Sales (Last 10)
+GET {{baseUrl}}/dashboard/ventas/recientes?limite=10
+Authorization: {{authToken}}
+
+###############################################################################
+### 7. Get Best Selling Products
+GET {{baseUrl}}/dashboard/productos/mas-vendidos?limite=10
+Authorization: {{authToken}}
+
+###############################################################################
+### 8. Get Top 5 Best Selling Products
+GET {{baseUrl}}/dashboard/productos/mas-vendidos?limite=5
+Authorization: {{authToken}}
+
+###############################################################################
+### 9. Get Critical Stock Products (Low Stock)
+GET {{baseUrl}}/dashboard/productos/criticos?umbral=20
+Authorization: {{authToken}}
+
+###############################################################################
+### 10. Get Products Expiring Soon
+GET {{baseUrl}}/dashboard/productos/por-vencer?dias=30
+Authorization: {{authToken}}
+
+###############################################################################
+### 11. Get Products Expiring in 7 Days
+GET {{baseUrl}}/dashboard/productos/por-vencer?dias=7
+Authorization: {{authToken}}
+
+###############################################################################
+### 12. Get Sales by Hour (Today)
+GET {{baseUrl}}/dashboard/ventas/por-hora
+Authorization: {{authToken}}
+
+###############################################################################
+### 13. Get Sales Trend (Last 7 Days)
+GET {{baseUrl}}/dashboard/ventas/tendencia?dias=7
+Authorization: {{authToken}}
+
+###############################################################################
+### 14. Get Sales Trend (Last 30 Days)
+GET {{baseUrl}}/dashboard/ventas/tendencia?dias=30
+Authorization: {{authToken}}
+
+###############################################################################
+### 15. Get Sales by Payment Method
+GET {{baseUrl}}/dashboard/ventas/metodo-pago
+Authorization: {{authToken}}
+
+###############################################################################
+### 16. Get Sales by Category
+GET {{baseUrl}}/dashboard/ventas/categoria
+Authorization: {{authToken}}
+
+###############################################################################
+### 17. Get Revenue Statistics
+GET {{baseUrl}}/dashboard/estadisticas/ingresos
+Authorization: {{authToken}}
+
+###############################################################################
+### 18. Get Inventory Value
+GET {{baseUrl}}/dashboard/inventario/valor
+Authorization: {{authToken}}
+
+###############################################################################
+### 19. Get Active Users Count
+GET {{baseUrl}}/dashboard/usuarios/activos
+Authorization: {{authToken}}
+
+###############################################################################
+### 20. Get Complete Analytics
+GET {{baseUrl}}/dashboard/analytics/completo
+Authorization: {{authToken}}
+
+###############################################################################
+### 21. Get Daily Performance Metrics
+GET {{baseUrl}}/dashboard/metricas/diarias
+Authorization: {{authToken}}
+
+###############################################################################
+### 22. Get Weekly Performance Metrics
+GET {{baseUrl}}/dashboard/metricas/semanales
+Authorization: {{authToken}}
+
+###############################################################################
+### 23. Get Monthly Performance Metrics
+GET {{baseUrl}}/dashboard/metricas/mensuales
+Authorization: {{authToken}}
+
+###############################################################################
+### 24. Get Year-to-Date Summary
+GET {{baseUrl}}/dashboard/resumen/anual
+Authorization: {{authToken}}

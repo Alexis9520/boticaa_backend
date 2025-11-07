@@ -3,8 +3,8 @@ package quantify.BoticaSaid.controller;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
-import quantify.BoticaSaid.dto.VentaRequestDTO;
-import quantify.BoticaSaid.dto.VentaResponseDTO;
+import quantify.BoticaSaid.dto.venta.VentaRequestDTO;
+import quantify.BoticaSaid.dto.venta.VentaResponseDTO;
 import quantify.BoticaSaid.service.VentaService;
 
 import java.util.List;

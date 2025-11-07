@@ -1,8 +1,8 @@
 package quantify.BoticaSaid.controller;
 
-import quantify.BoticaSaid.dto.PageResponse;
-import quantify.BoticaSaid.dto.ProductSummaryDTO;
-import quantify.BoticaSaid.dto.StockItemDTO;
+import quantify.BoticaSaid.dto.common.PageResponse;
+import quantify.BoticaSaid.dto.producto.ProductSummaryDTO;
+import quantify.BoticaSaid.dto.stock.StockItemDTO;
 import quantify.BoticaSaid.service.StockService;
 import quantify.BoticaSaid.service.StockSummaryService;
 import org.springframework.beans.factory.annotation.Autowired;

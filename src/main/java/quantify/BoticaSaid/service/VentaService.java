@@ -3,7 +3,11 @@ package quantify.BoticaSaid.service;
 import jakarta.transaction.Transactional;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
-import quantify.BoticaSaid.dto.*;
+import quantify.BoticaSaid.dto.dashboard.DashboardResumenDTO;
+import quantify.BoticaSaid.dto.producto.DetalleProductoDTO;
+import quantify.BoticaSaid.dto.venta.VentaRequestDTO;
+import quantify.BoticaSaid.dto.venta.VentaResponseDTO;
+import quantify.BoticaSaid.dto.venta.VentasPorHoraDTO;
 import quantify.BoticaSaid.model.*;
 import quantify.BoticaSaid.repository.*;
 
