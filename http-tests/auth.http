@@ -1,0 +1,78 @@
+### Authentication and User Registration Tests
+### Base URL
+@baseUrl = http://localhost:8080
+@contentType = application/json
+
+### Variables for storing tokens and user data
+@authToken = 
+@dniUsuario = 12345678
+
+###############################################################################
+### 1. Register New User
+POST {{baseUrl}}/auth/register
+Content-Type: {{contentType}}
+
+{
+  "dni": "12345678",
+  "nombreCompleto": "Juan Pérez",
+  "contrasena": "password123",
+  "rol": "VENDEDOR",
+  "turno": "MAÑANA",
+  "horarioEntrada": "08:00",
+  "horarioSalida": "16:00"
+}
+
+###############################################################################
+### 2. Login with User Credentials
+POST {{baseUrl}}/auth/login
+Content-Type: {{contentType}}
+
+{
+  "dni": "12345678",
+  "contrasena": "password123"
+}
+
+###############################################################################
+### 3. Login with Invalid Credentials (should fail)
+POST {{baseUrl}}/auth/login
+Content-Type: {{contentType}}
+
+{
+  "dni": "12345678",
+  "contrasena": "wrongpassword"
+}
+
+###############################################################################
+### 4. Login with Non-existent User (should fail)
+POST {{baseUrl}}/auth/login
+Content-Type: {{contentType}}
+
+{
+  "dni": "99999999",
+  "contrasena": "password123"
+}
+
+###############################################################################
+### 5. Register Admin User
+POST {{baseUrl}}/auth/register
+Content-Type: {{contentType}}
+
+{
+  "dni": "87654321",
+  "nombreCompleto": "María García",
+  "contrasena": "admin123",
+  "rol": "ADMINISTRADOR",
+  "turno": "TARDE",
+  "horarioEntrada": "14:00",
+  "horarioSalida": "22:00"
+}
+
+###############################################################################
+### 6. Login as Admin
+POST {{baseUrl}}/auth/login
+Content-Type: {{contentType}}
+
+{
+  "dni": "87654321",
+  "contrasena": "admin123"
+}

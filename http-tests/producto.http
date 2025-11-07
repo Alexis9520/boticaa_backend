@@ -1,0 +1,173 @@
+### Product CRUD Operations Tests
+### Base URL
+@baseUrl = http://localhost:8080
+@contentType = application/json
+
+### Variables
+@authToken = Bearer YOUR_TOKEN_HERE
+@productoId = 1
+@codigoBarras = 7501234567890
+
+###############################################################################
+### 1. Create New Product with Initial Stock
+POST {{baseUrl}}/productos/nuevo
+Content-Type: {{contentType}}
+Authorization: {{authToken}}
+
+{
+  "codigoBarras": "7501234567890",
+  "nombre": "Paracetamol",
+  "concentracion": "500mg",
+  "cantidadGeneral": 100,
+  "cantidadMinima": 20,
+  "precioVentaUnd": 2.50,
+  "descuento": 0,
+  "laboratorio": "Farma Lab",
+  "categoria": "Analgésicos",
+  "cantidadUnidadesBlister": 10,
+  "precioVentaBlister": 20.00,
+  "principioActivo": "Paracetamol",
+  "tipoMedicamento": "Genérico",
+  "presentacion": "Tabletas",
+  "stocks": [
+    {
+      "codigoStock": "LOT001",
+      "cantidadUnidades": 100,
+      "fechaVencimiento": "2025-12-31",
+      "precioCompra": 1.50
+    }
+  ]
+}
+
+###############################################################################
+### 2. Get Product by ID
+GET {{baseUrl}}/productos/{{productoId}}
+Authorization: {{authToken}}
+
+###############################################################################
+### 3. Get Product by Barcode
+GET {{baseUrl}}/productos/codigo-barras/{{codigoBarras}}
+Authorization: {{authToken}}
+
+###############################################################################
+### 4. List All Products (with pagination)
+GET {{baseUrl}}/productos?page=0&size=10
+Authorization: {{authToken}}
+
+###############################################################################
+### 5. Search Products by Name
+GET {{baseUrl}}/productos?q=Paracetamol&page=0&size=10
+Authorization: {{authToken}}
+
+###############################################################################
+### 6. Search Products by Laboratory
+GET {{baseUrl}}/productos?lab=Farma Lab&page=0&size=10
+Authorization: {{authToken}}
+
+###############################################################################
+### 7. Search Products by Category
+GET {{baseUrl}}/productos?cat=Analgésicos&page=0&size=10
+Authorization: {{authToken}}
+
+###############################################################################
+### 8. Search Products by Name or Category
+GET {{baseUrl}}/productos/buscar?nombre=Paracetamol
+Authorization: {{authToken}}
+
+###############################################################################
+### 9. Get Products with Low Stock
+GET {{baseUrl}}/productos/stock-bajo?umbral=30
+Authorization: {{authToken}}
+
+###############################################################################
+### 10. Update Product by ID
+PUT {{baseUrl}}/productos/{{productoId}}
+Content-Type: {{contentType}}
+Authorization: {{authToken}}
+
+{
+  "codigoBarras": "7501234567890",
+  "nombre": "Paracetamol Extra Fuerte",
+  "concentracion": "750mg",
+  "cantidadGeneral": 100,
+  "cantidadMinima": 25,
+  "precioVentaUnd": 3.00,
+  "descuento": 0.10,
+  "laboratorio": "Farma Lab",
+  "categoria": "Analgésicos",
+  "cantidadUnidadesBlister": 10,
+  "precioVentaBlister": 25.00,
+  "principioActivo": "Paracetamol",
+  "tipoMedicamento": "Genérico",
+  "presentacion": "Tabletas"
+}
+
+###############################################################################
+### 11. Add Stock to Existing Product
+POST {{baseUrl}}/productos/agregar-stock
+Content-Type: {{contentType}}
+Authorization: {{authToken}}
+
+{
+  "productoId": 1,
+  "codigoStock": "LOT002",
+  "cantidadUnidades": 50,
+  "fechaVencimiento": "2026-06-30",
+  "precioCompra": 1.75
+}
+
+###############################################################################
+### 12. Add Stock by Barcode
+POST {{baseUrl}}/productos/agregar-stock
+Content-Type: {{contentType}}
+Authorization: {{authToken}}
+
+{
+  "codigoBarras": "7501234567890",
+  "codigoStock": "LOT003",
+  "cantidadUnidades": 30,
+  "fechaVencimiento": "2026-12-31",
+  "precioCompra": 1.60
+}
+
+###############################################################################
+### 13. Delete Product by ID
+DELETE {{baseUrl}}/productos/{{productoId}}
+Authorization: {{authToken}}
+
+###############################################################################
+### 14. Create Complete Product Example
+POST {{baseUrl}}/productos/nuevo
+Content-Type: {{contentType}}
+Authorization: {{authToken}}
+
+{
+  "codigoBarras": "7502345678901",
+  "nombre": "Ibuprofeno",
+  "concentracion": "400mg",
+  "cantidadGeneral": 200,
+  "cantidadMinima": 30,
+  "precioVentaUnd": 3.50,
+  "descuento": 0.05,
+  "laboratorio": "MediPharma",
+  "categoria": "Antiinflamatorios",
+  "cantidadUnidadesBlister": 12,
+  "precioVentaBlister": 35.00,
+  "principioActivo": "Ibuprofeno",
+  "tipoMedicamento": "Genérico",
+  "presentacion": "Comprimidos",
+  "stocks": [
+    {
+      "codigoStock": "IBU001",
+      "cantidadUnidades": 100,
+      "fechaVencimiento": "2025-08-31",
+      "precioCompra": 2.00
+    },
+    {
+      "codigoStock": "IBU002",
+      "cantidadUnidades": 100,
+      "fechaVencimiento": "2026-02-28",
+      "precioCompra": 1.90
+    }
+  ]
+}

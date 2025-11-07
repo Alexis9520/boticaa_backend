@@ -1,0 +1,152 @@
+### Cash Register Operations Tests
+### Base URL
+@baseUrl = http://localhost:8080
+@contentType = application/json
+
+### Variables
+@authToken = Bearer YOUR_TOKEN_HERE
+@dniUsuario = 87654321
+@cajaId = 1
+
+###############################################################################
+### 1. Open Cash Register
+POST {{baseUrl}}/api/cajas/abrir
+Content-Type: {{contentType}}
+Authorization: {{authToken}}
+
+{
+  "dniUsuario": "87654321",
+  "efectivoInicial": 100.00
+}
+
+###############################################################################
+### 2. Get Current Cash Register Status
+GET {{baseUrl}}/api/cajas/actual
+Authorization: {{authToken}}
+
+###############################################################################
+### 3. Get Cash Register by ID
+GET {{baseUrl}}/api/cajas/{{cajaId}}
+Authorization: {{authToken}}
+
+###############################################################################
+### 4. Register Cash Income (Manual Entry)
+POST {{baseUrl}}/api/cajas/movimiento/efectivo
+Content-Type: {{contentType}}
+Authorization: {{authToken}}
+
+{
+  "dniUsuario": "87654321",
+  "tipo": "INGRESO",
+  "monto": 50.00,
+  "descripcion": "Venta adicional en efectivo"
+}
+
+###############################################################################
+### 5. Register Cash Expense (Manual Entry)
+POST {{baseUrl}}/api/cajas/movimiento/efectivo
+Content-Type: {{contentType}}
+Authorization: {{authToken}}
+
+{
+  "dniUsuario": "87654321",
+  "tipo": "EGRESO",
+  "monto": 20.00,
+  "descripcion": "Compra de suministros de oficina"
+}
+
+###############################################################################
+### 6. Register Digital Income
+POST {{baseUrl}}/api/cajas/movimiento/efectivo
+Content-Type: {{contentType}}
+Authorization: {{authToken}}
+
+{
+  "dniUsuario": "87654321",
+  "tipo": "INGRESO",
+  "monto": 75.00,
+  "descripcion": "Pago digital recibido"
+}
+
+###############################################################################
+### 7. Get Current Cash Balance
+GET {{baseUrl}}/api/cajas/saldo-actual
+Authorization: {{authToken}}
+
+###############################################################################
+### 8. Get All Movements for Current Cash Register
+GET {{baseUrl}}/api/cajas/{{cajaId}}/movimientos
+Authorization: {{authToken}}
+
+###############################################################################
+### 9. Get Manual Movements Only
+GET {{baseUrl}}/api/cajas/{{cajaId}}/movimientos?soloManuales=true
+Authorization: {{authToken}}
+
+###############################################################################
+### 10. Get Cash Register Summary
+GET {{baseUrl}}/api/cajas/{{cajaId}}/resumen
+Authorization: {{authToken}}
+
+###############################################################################
+### 11. Close Cash Register
+POST {{baseUrl}}/api/cajas/cerrar
+Content-Type: {{contentType}}
+Authorization: {{authToken}}
+
+{
+  "dniUsuario": "87654321"
+}
+
+###############################################################################
+### 12. Close Cash Register with Details
+POST {{baseUrl}}/api/cajas/cerrar
+Content-Type: {{contentType}}
+Authorization: {{authToken}}
+
+{
+  "dniUsuario": "87654321",
+  "efectivoContado": 850.00,
+  "digitalContado": 450.00,
+  "observaciones": "Cierre normal del turno"
+}
+
+###############################################################################
+### 13. Get Cash Register History (Paginated)
+GET {{baseUrl}}/api/cajas/historial?page=0&size=10
+Authorization: {{authToken}}
+
+###############################################################################
+### 14. Get Cash Register History with Movements
+GET {{baseUrl}}/api/cajas/historial/con-movimientos?soloManuales=false&page=0&size=10
+Authorization: {{authToken}}
+
+###############################################################################
+### 15. Get Cash Register History - Manual Movements Only
+GET {{baseUrl}}/api/cajas/historial/con-movimientos?soloManuales=true&page=0&size=10
+Authorization: {{authToken}}
+
+###############################################################################
+### 16. Get All Cash Registers
+GET {{baseUrl}}/api/cajas
+Authorization: {{authToken}}
+
+###############################################################################
+### 17. Get Cash Registers by Date Range
+GET {{baseUrl}}/api/cajas?fechaInicio=2025-01-01&fechaFin=2025-12-31
+Authorization: {{authToken}}
+
+###############################################################################
+### 18. Get Cash Registers by User
+GET {{baseUrl}}/api/cajas/usuario/{{dniUsuario}}
+Authorization: {{authToken}}
+
+###############################################################################
+### 19. Get Daily Summary
+GET {{baseUrl}}/api/cajas/resumen/diario
+Authorization: {{authToken}}
+
+###############################################################################
+### 20. Get Monthly Summary
+GET {{baseUrl}}/api/cajas/resumen/mensual
+Authorization: {{authToken}}

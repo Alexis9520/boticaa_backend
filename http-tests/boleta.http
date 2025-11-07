@@ -1,0 +1,140 @@
+### Receipt/Boleta Operations Tests
+### Base URL
+@baseUrl = http://localhost:8080
+@contentType = application/json
+
+### Variables
+@authToken = Bearer YOUR_TOKEN_HERE
+@boletaId = 1
+@boletaNumero = BOL-001
+
+###############################################################################
+### 1. Get Receipt by ID
+GET {{baseUrl}}/boletas/{{boletaId}}
+Authorization: {{authToken}}
+
+###############################################################################
+### 2. Get Receipt by Number
+GET {{baseUrl}}/boletas/numero/{{boletaNumero}}
+Authorization: {{authToken}}
+
+###############################################################################
+### 3. Get All Receipts (Paginated)
+GET {{baseUrl}}/boletas?page=0&size=10
+Authorization: {{authToken}}
+
+###############################################################################
+### 4. Get Today's Receipts
+GET {{baseUrl}}/boletas/hoy
+Authorization: {{authToken}}
+
+###############################################################################
+### 5. Get Receipts by Date Range
+GET {{baseUrl}}/boletas?fechaInicio=2025-01-01&fechaFin=2025-12-31
+Authorization: {{authToken}}
+
+###############################################################################
+### 6. Get Receipts by Client DNI
+GET {{baseUrl}}/boletas/cliente/12345678
+Authorization: {{authToken}}
+
+###############################################################################
+### 7. Get Receipts by Client DNI (Paginated)
+GET {{baseUrl}}/boletas/cliente/12345678?page=0&size=10
+Authorization: {{authToken}}
+
+###############################################################################
+### 8. Get Receipts by Seller DNI
+GET {{baseUrl}}/boletas/vendedor/87654321
+Authorization: {{authToken}}
+
+###############################################################################
+### 9. Get Receipts by Payment Method - Cash
+GET {{baseUrl}}/boletas/metodo-pago/EFECTIVO
+Authorization: {{authToken}}
+
+###############################################################################
+### 10. Get Receipts by Payment Method - Digital (Yape)
+GET {{baseUrl}}/boletas/metodo-pago/YAPE
+Authorization: {{authToken}}
+
+###############################################################################
+### 11. Get Receipt Details with Products
+GET {{baseUrl}}/boletas/{{boletaId}}/detalle
+Authorization: {{authToken}}
+
+###############################################################################
+### 12. Search Receipts
+GET {{baseUrl}}/boletas/buscar?q=Juan
+Authorization: {{authToken}}
+
+###############################################################################
+### 13. Get Receipt Statistics
+GET {{baseUrl}}/boletas/estadisticas
+Authorization: {{authToken}}
+
+###############################################################################
+### 14. Get Daily Receipt Summary
+GET {{baseUrl}}/boletas/resumen/diario
+Authorization: {{authToken}}
+
+###############################################################################
+### 15. Get Monthly Receipt Summary
+GET {{baseUrl}}/boletas/resumen/mensual
+Authorization: {{authToken}}
+
+###############################################################################
+### 16. Print Receipt (Get PDF)
+GET {{baseUrl}}/boletas/{{boletaId}}/imprimir
+Authorization: {{authToken}}
+
+###############################################################################
+### 17. Send Receipt by Email
+POST {{baseUrl}}/boletas/{{boletaId}}/enviar-email
+Content-Type: {{contentType}}
+Authorization: {{authToken}}
+
+{
+  "email": "cliente@example.com"
+}
+
+###############################################################################
+### 18. Get Receipt by Number - Detailed
+GET {{baseUrl}}/boletas/numero/{{boletaNumero}}/detallado
+Authorization: {{authToken}}
+
+###############################################################################
+### 19. Cancel Receipt
+DELETE {{baseUrl}}/boletas/{{boletaId}}
+Authorization: {{authToken}}
+
+###############################################################################
+### 20. Cancel Receipt with Reason
+POST {{baseUrl}}/boletas/{{boletaId}}/cancelar
+Content-Type: {{contentType}}
+Authorization: {{authToken}}
+
+{
+  "motivo": "Cliente solicitó devolución",
+  "observaciones": "Producto con defecto"
+}
+
+###############################################################################
+### 21. Get Cancelled Receipts
+GET {{baseUrl}}/boletas/canceladas?page=0&size=10
+Authorization: {{authToken}}
+
+###############################################################################
+### 22. Reprint Receipt
+GET {{baseUrl}}/boletas/{{boletaId}}/reimprimir
+Authorization: {{authToken}}
+
+###############################################################################
+### 23. Export Receipts to Excel
+GET {{baseUrl}}/boletas/exportar?formato=excel&fechaInicio=2025-01-01&fechaFin=2025-12-31
+Authorization: {{authToken}}
+
+###############################################################################
+### 24. Export Receipts to PDF
+GET {{baseUrl}}/boletas/exportar?formato=pdf&fechaInicio=2025-01-01&fechaFin=2025-12-31
+Authorization: {{authToken}}
