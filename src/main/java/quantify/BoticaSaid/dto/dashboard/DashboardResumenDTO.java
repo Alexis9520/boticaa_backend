@@ -1,4 +1,4 @@
-package quantify.BoticaSaid.dto;
+package quantify.BoticaSaid.dto.dashboard;
 
 import java.util.List;
 

@@ -1,4 +1,4 @@
-package quantify.BoticaSaid.dto;
+package quantify.BoticaSaid.dto.producto;
 
 import java.math.BigDecimal;
 

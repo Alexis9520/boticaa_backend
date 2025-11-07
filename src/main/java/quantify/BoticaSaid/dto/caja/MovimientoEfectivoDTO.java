@@ -1,4 +1,4 @@
-package quantify.BoticaSaid.dto;
+package quantify.BoticaSaid.dto.caja;
 
 import jakarta.validation.constraints.*;
 

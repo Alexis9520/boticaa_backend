@@ -1,12 +1,17 @@
-package quantify.BoticaSaid.dto;
+package quantify.BoticaSaid.dto.stock;
 
 import com.fasterxml.jackson.annotation.JsonFormat;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 
-public class StockRequest {
-    private String codigoStock; // <-- NUEVO CAMPO
-
+/**
+ * DTO para agregar stock a un producto
+ * Soporta búsqueda de producto por ID o código de barras
+ */
+public class AgregarStockRequest {
+    private String codigoStock;
+    private Long productoId;  // ID del producto (alternativa a codigoBarras)
+    private String codigoBarras;  // Código de barras del producto (para escáneres)
     private int cantidadUnidades;
 
     @JsonFormat(pattern = "yyyy-MM-dd")
@@ -15,14 +20,32 @@ public class StockRequest {
     private BigDecimal precioCompra;
 
     // Constructor vacío
-    public StockRequest() {}
+    public AgregarStockRequest() {}
 
     // Getters y Setters
+
     public String getCodigoStock() {
         return codigoStock;
     }
+
     public void setCodigoStock(String codigoStock) {
         this.codigoStock = codigoStock;
+    }
+
+    public Long getProductoId() {
+        return productoId;
+    }
+
+    public void setProductoId(Long productoId) {
+        this.productoId = productoId;
+    }
+
+    public String getCodigoBarras() {
+        return codigoBarras;
+    }
+
+    public void setCodigoBarras(String codigoBarras) {
+        this.codigoBarras = codigoBarras;
     }
 
     public int getCantidadUnidades() {

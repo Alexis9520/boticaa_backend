@@ -1,7 +1,7 @@
 package quantify.BoticaSaid.service;
 
-import quantify.BoticaSaid.dto.ProductSummaryDTO;
-import quantify.BoticaSaid.dto.StockLoteDTO;
+import quantify.BoticaSaid.dto.producto.ProductSummaryDTO;
+import quantify.BoticaSaid.dto.stock.StockLoteDTO;
 import quantify.BoticaSaid.model.Producto;
 import quantify.BoticaSaid.model.Stock;
 import org.springframework.beans.factory.annotation.Autowired;

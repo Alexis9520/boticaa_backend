@@ -3,7 +3,12 @@ package quantify.BoticaSaid.controller;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
-import quantify.BoticaSaid.dto.*;
+import quantify.BoticaSaid.dto.caja.CajaAperturaDTO;
+import quantify.BoticaSaid.dto.caja.CajaResumenDTO;
+import quantify.BoticaSaid.dto.caja.CierreCajaDTO;
+import quantify.BoticaSaid.dto.caja.MovimientoDTO;
+import quantify.BoticaSaid.dto.caja.MovimientoEfectivoDTO;
+import quantify.BoticaSaid.dto.common.PageResponse;
 import quantify.BoticaSaid.model.Caja;
 import quantify.BoticaSaid.service.CajaService;
 

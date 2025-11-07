@@ -1,7 +1,7 @@
 package quantify.BoticaSaid.service;
 
-import quantify.BoticaSaid.dto.PageResponse;
-import quantify.BoticaSaid.dto.StockItemDTO;
+import quantify.BoticaSaid.dto.common.PageResponse;
+import quantify.BoticaSaid.dto.stock.StockItemDTO;
 import quantify.BoticaSaid.model.Stock;
 import quantify.BoticaSaid.model.Producto;
 import quantify.BoticaSaid.repository.StockRepository;

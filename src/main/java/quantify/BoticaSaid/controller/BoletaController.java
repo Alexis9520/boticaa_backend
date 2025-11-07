@@ -7,9 +7,9 @@ import org.springframework.data.domain.Sort;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
-import quantify.BoticaSaid.dto.BoletaResponseDTO;
-import quantify.BoticaSaid.dto.PageResponse;
-import quantify.BoticaSaid.dto.DetalleProductoDTO;
+import quantify.BoticaSaid.dto.boleta.BoletaResponseDTO;
+import quantify.BoticaSaid.dto.common.PageResponse;
+import quantify.BoticaSaid.dto.producto.DetalleProductoDTO;
 import quantify.BoticaSaid.model.Boleta;
 import quantify.BoticaSaid.repository.BoletaRepository;
 

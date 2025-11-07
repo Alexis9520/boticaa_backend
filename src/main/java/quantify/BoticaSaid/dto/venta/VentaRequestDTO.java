@@ -1,5 +1,7 @@
-package quantify.BoticaSaid.dto;
+package quantify.BoticaSaid.dto.venta;
 
+import quantify.BoticaSaid.dto.common.MetodoPagoDTO;
+import quantify.BoticaSaid.dto.producto.DetalleProductoDTO;
 import quantify.BoticaSaid.model.MetodoPago;
 import java.math.BigDecimal;
 import java.util.List;

@@ -1,4 +1,4 @@
-package quantify.BoticaSaid.dto;
+package quantify.BoticaSaid.dto.auth;
 
 public class AuthResponse {
     private String token;

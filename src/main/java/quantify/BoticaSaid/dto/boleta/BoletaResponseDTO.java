@@ -1,19 +1,22 @@
-package quantify.BoticaSaid.dto;
+package quantify.BoticaSaid.dto.boleta;
 
+import quantify.BoticaSaid.dto.producto.DetalleProductoDTO;
 import java.math.BigDecimal;
 import java.util.List;
 
-public class VentaResponseDTO {
+public class BoletaResponseDTO {
     private Long id;
     private String numero;
     private String fecha;
     private String cliente;
-    private String metodoPago;
+    private String metodoPago; // <--- AQUI
     private BigDecimal total;
     private String usuario;
     private List<DetalleProductoDTO> productos;
+    private BigDecimal totalCompra;
+    private BigDecimal vuelto;
 
-    // Getters y setters
+    // getters y setters
     public Long getId() { return id; }
     public void setId(Long id) { this.id = id; }
 
@@ -37,4 +40,10 @@ public class VentaResponseDTO {
 
     public List<DetalleProductoDTO> getProductos() { return productos; }
     public void setProductos(List<DetalleProductoDTO> productos) { this.productos = productos; }
+
+    public BigDecimal getTotalCompra() { return totalCompra; }
+    public void setTotalCompra(BigDecimal totalCompra) { this.totalCompra = totalCompra; }
+
+    public BigDecimal getVuelto() { return vuelto; }
+    public void setVuelto(BigDecimal vuelto) { this.vuelto = vuelto; }
 }

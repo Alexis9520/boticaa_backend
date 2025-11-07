@@ -1,9 +1,10 @@
-package quantify.BoticaSaid.dto;
+package quantify.BoticaSaid.dto.producto;
 
+import quantify.BoticaSaid.dto.stock.StockLoteDTO;
 import java.math.BigDecimal;
 import java.util.List;
 
-public class ProductoRequest {
+public class ProductoResponse {
     private Long id;
     private String codigoBarras;
     private String nombre;
@@ -14,26 +15,16 @@ public class ProductoRequest {
     private BigDecimal descuento;
     private String laboratorio;
     private String categoria;
-    private int cantidadUnidadesBlister;
+    private Integer cantidadUnidadesBlister;
     private BigDecimal precioVentaBlister;
 
     // NUEVOS CAMPOS
     private String principioActivo;
     private String tipoMedicamento;
     private String presentacion;
-
-    private List<StockRequest> stocks;
+    private List<StockLoteDTO> stocks;
 
     // Getters y setters
-
-
-    public Long getId() {
-        return id;
-    }
-
-    public void setId(Long id) {
-        this.id = id;
-    }
 
     public String getPrincipioActivo() {
         return principioActivo;
@@ -51,28 +42,12 @@ public class ProductoRequest {
         this.tipoMedicamento = tipoMedicamento;
     }
 
-    public Integer getCantidadMinima() {
-        return cantidadMinima;
+    public Long getId() {
+        return id;
     }
 
-    public void setCantidadMinima(Integer cantidadMinima) {
-        this.cantidadMinima = cantidadMinima;
-    }
-
-    public int getCantidadUnidadesBlister() {
-        return cantidadUnidadesBlister;
-    }
-
-    public void setCantidadUnidadesBlister(int cantidadUnidadesBlister) {
-        this.cantidadUnidadesBlister = cantidadUnidadesBlister;
-    }
-
-    public BigDecimal getPrecioVentaBlister() {
-        return precioVentaBlister;
-    }
-
-    public void setPrecioVentaBlister(BigDecimal precioBlister) {
-        this.precioVentaBlister = precioBlister;
+    public void setId(Long id) {
+        this.id = id;
     }
 
     public String getCodigoBarras() {
@@ -107,6 +82,14 @@ public class ProductoRequest {
         this.cantidadGeneral = cantidadGeneral;
     }
 
+    public Integer getCantidadMinima() {
+        return cantidadMinima;
+    }
+
+    public void setCantidadMinima(Integer cantidadMinima) {
+        this.cantidadMinima = cantidadMinima;
+    }
+
     public BigDecimal getPrecioVentaUnd() {
         return precioVentaUnd;
     }
@@ -139,11 +122,27 @@ public class ProductoRequest {
         this.categoria = categoria;
     }
 
-    public List<StockRequest> getStocks() {
+    public Integer getCantidadUnidadesBlister() {
+        return cantidadUnidadesBlister;
+    }
+
+    public void setCantidadUnidadesBlister(Integer cantidadUnidadesBlister) {
+        this.cantidadUnidadesBlister = cantidadUnidadesBlister;
+    }
+
+    public BigDecimal getPrecioVentaBlister() {
+        return precioVentaBlister;
+    }
+
+    public void setPrecioVentaBlister(BigDecimal precioVentaBlister) {
+        this.precioVentaBlister = precioVentaBlister;
+    }
+
+    public List<StockLoteDTO> getStocks() {
         return stocks;
     }
 
-    public void setStocks(List<StockRequest> stocks) {
+    public void setStocks(List<StockLoteDTO> stocks) {
         this.stocks = stocks;
     }
     public String getPresentacion() { return presentacion; }

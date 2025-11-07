@@ -1,4 +1,4 @@
-package quantify.BoticaSaid.dto;
+package quantify.BoticaSaid.dto.stock;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;

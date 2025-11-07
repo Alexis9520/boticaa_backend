@@ -1,5 +1,6 @@
-package quantify.BoticaSaid.dto;
+package quantify.BoticaSaid.dto.producto;
 
+import quantify.BoticaSaid.dto.stock.StockLoteDTO;
 import java.util.List;
 
 public class ProductSummaryDTO {
