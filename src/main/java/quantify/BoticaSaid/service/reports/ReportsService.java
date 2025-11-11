@@ -184,22 +184,60 @@ public class ReportsService {
     }
 
     // ========= Caja =========
+    // Reemplazar el método getCajaSummary existente por este
     public CajaSummaryDto getCajaSummary(String from, String to) {
         Timestamp f = tsStart(from);
         Timestamp t = tsEnd(to);
 
-        String ingresosSql = """
-      SELECT COALESCE(SUM(b.total_compra),0) AS ingresos
+        // 1) Ventas totales (boletas)
+        String ventasSql = """
+      SELECT COALESCE(SUM(b.total_compra),0) AS ventas
       FROM boletas b
       WHERE (? IS NULL OR b.fecha_venta >= ?)
         AND (? IS NULL OR b.fecha_venta <= ?)
       """;
-        BigDecimal ingresos = jdbc.queryForObject(ingresosSql, new Object[]{f,f,t,t}, BigDecimal.class);
-        if (ingresos == null) ingresos = BigDecimal.ZERO;
+        BigDecimal ingresosVentas = jdbc.queryForObject(ventasSql, new Object[]{f,f,t,t}, BigDecimal.class);
+        if (ingresosVentas == null) ingresosVentas = BigDecimal.ZERO;
 
+        // 2) Ventas en efectivo (por método de pago)
+        String ventasEfectivoSql = """
+      SELECT COALESCE(SUM(b.total_compra),0) AS ventas_efectivo
+      FROM boletas b
+      JOIN metodo_pago m ON m.boleta_id = b.id
+      WHERE m.nombre = 'Efectivo'
+        AND (? IS NULL OR b.fecha_venta >= ?)
+        AND (? IS NULL OR b.fecha_venta <= ?)
+      """;
+        BigDecimal ventasEfectivo;
+        try {
+            ventasEfectivo = jdbc.queryForObject(ventasEfectivoSql, new Object[]{f,f,t,t}, BigDecimal.class);
+            if (ventasEfectivo == null) ventasEfectivo = BigDecimal.ZERO;
+        } catch (Exception e) {
+            log.warn("getCajaSummary - error querying ventasEfectivo: {}", e.toString());
+            ventasEfectivo = BigDecimal.ZERO;
+        }
+
+        // 3) Ingresos manuales (movimientos_efectivo tipo = 'INGRESO')
+        String ingresosManualesSql = """
+      SELECT COALESCE(SUM(m.monto),0) AS ingresos_manuales
+      FROM movimientos_efectivo m
+      WHERE m.tipo = 'INGRESO'
+        AND (? IS NULL OR m.fecha >= ?)
+        AND (? IS NULL OR m.fecha <= ?)
+      """;
+        BigDecimal ingresosManuales;
+        try {
+            ingresosManuales = jdbc.queryForObject(ingresosManualesSql, new Object[]{f,f,t,t}, BigDecimal.class);
+            if (ingresosManuales == null) ingresosManuales = BigDecimal.ZERO;
+        } catch (Exception e) {
+            log.warn("getCajaSummary - error querying ingresosManuales: {}", e.toString());
+            ingresosManuales = BigDecimal.ZERO;
+        }
+
+        // 4) Egresos (movimientos_efectivo tipo = 'EGRESO')
         String egresosSql = """
       SELECT COALESCE(SUM(m.monto),0) AS egresos
-      FROM caja_movimientos m
+      FROM movimientos_efectivo m
       WHERE m.tipo = 'EGRESO'
         AND (? IS NULL OR m.fecha >= ?)
         AND (? IS NULL OR m.fecha <= ?)
@@ -208,14 +246,31 @@ public class ReportsService {
         try {
             egresos = jdbc.queryForObject(egresosSql, new Object[]{f,f,t,t}, BigDecimal.class);
             if (egresos == null) egresos = BigDecimal.ZERO;
-        } catch (Exception ignored) {
+        } catch (Exception e) {
+            log.warn("getCajaSummary - error querying egresos: {}", e.toString());
             egresos = BigDecimal.ZERO;
         }
 
+        // 5) Efectivo inicial (opcional) - depende de si tienes tabla 'caja' con campo saldo_inicial
+        BigDecimal efectivoInicial = BigDecimal.ZERO;
+        try {
+            // Ajusta la query si tu esquema es distinto; ejemplo ilustrativo:
+            // efectivoInicial = jdbc.queryForObject("SELECT COALESCE(saldo_inicial,0) FROM caja WHERE id = ? LIMIT 1", BigDecimal.class, cajaId);
+        } catch (Exception ignored) {}
+
+        BigDecimal ingresosTotales = ingresosVentas.add(ingresosManuales);
+        BigDecimal neto = ingresosTotales.subtract(egresos);
+
+        log.debug("getCajaSummary -> ventas={}, ventasEfectivo={}, ingresosManuales={}, egresos={}, efectivoInicial={}, neto={}",
+                ingresosVentas, ventasEfectivo, ingresosManuales, egresos, efectivoInicial, neto);
+
         CajaSummaryDto dto = new CajaSummaryDto();
-        dto.ingresos = ingresos;
+        dto.ingresosVentas = ingresosVentas;
+        dto.ingresosManuales = ingresosManuales;
+        dto.ventasEfectivo = ventasEfectivo;
         dto.egresos = egresos;
-        dto.neto = ingresos.subtract(egresos);
+        dto.neto = neto;
+        dto.efectivoInicial = efectivoInicial;
         return dto;
     }
 

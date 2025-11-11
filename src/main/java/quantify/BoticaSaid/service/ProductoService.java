@@ -13,8 +13,8 @@ import quantify.BoticaSaid.model.Stock;
 import quantify.BoticaSaid.repository.ProductoRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-
 import org.springframework.data.domain.Pageable;
+
 import java.time.LocalDate;
 import java.util.*;
 import java.util.stream.Collectors;
@@ -30,24 +30,36 @@ public class ProductoService {
     @Autowired
     private StockRepository stockRepository;
 
-    // 1. Crear producto con stock (valida duplicidad por código de barras, permite reactivar)
+    /**
+     * Crear producto con stock.
+     * Sólo el nombre es obligatorio.
+     * Se mantiene la lógica de reactivación si existe el código de barras y está inactivo.
+     */
     @Transactional
     public Object crearProductoConStock(ProductoRequest request) {
 
-        int acumuladorPadre = 0;
+        // Validar único campo obligatorio
+        if (request.getNombre() == null || request.getNombre().trim().isEmpty()) {
+            throw new IllegalArgumentException("El nombre del producto es obligatorio.");
+        }
 
         System.out.println("=== CREANDO PRODUCTO ===");
         System.out.println("Código de barras: " + request.getCodigoBarras());
         System.out.println("Stocks recibidos: " + (request.getStocks() != null ? request.getStocks().size() : 0));
 
-        Producto existente = productoRepository.findByCodigoBarras(request.getCodigoBarras());
+        // Buscar por código de barras sólo si vino un valor (puede ser null)
+        Producto existente = (request.getCodigoBarras() != null && !request.getCodigoBarras().isBlank())
+                ? productoRepository.findByCodigoBarras(request.getCodigoBarras())
+                : null;
+
         if (existente != null) {
             if (!existente.isActivo()) {
-                // Reactivar y actualizar datos
+                // Reactivar y actualizar datos (campos opcionales pueden ser null)
                 existente.setActivo(true);
                 existente.setNombre(request.getNombre());
+                existente.setCodigoBarras(request.getCodigoBarras());
                 existente.setConcentracion(request.getConcentracion());
-                existente.setCantidadGeneral(request.getCantidadGeneral());
+                existente.setCantidadGeneral(request.getCantidadGeneral()); // Se recalculará si hay stocks
                 existente.setPrecioVentaUnd(request.getPrecioVentaUnd());
                 existente.setDescuento(request.getDescuento());
                 existente.setLaboratorio(request.getLaboratorio());
@@ -59,17 +71,27 @@ public class ProductoService {
                 existente.setTipoMedicamento(request.getTipoMedicamento());
                 existente.setPresentacion(request.getPresentacion());
 
-                existente.getStocks().clear(); // orphanRemoval
+                // Limpiar stocks anteriores (orphanRemoval activo)
+                existente.getStocks().clear();
 
+                int acumulador = 0;
                 if (request.getStocks() != null && !request.getStocks().isEmpty()) {
                     for (var stockReq : request.getStocks()) {
                         Stock stock = new Stock();
                         stock.setCodigoStock(stockReq.getCodigoStock());
-                        stock.setCantidadUnidades(stockReq.getCantidadUnidades());
+                        int cant = stockReq.getCantidadUnidades(); // int
+                        acumulador += cant;
+                        stock.setCantidadUnidades(cant);
                         stock.setFechaVencimiento(stockReq.getFechaVencimiento());
                         stock.setPrecioCompra(stockReq.getPrecioCompra());
                         stock.setProducto(existente);
                         existente.getStocks().add(stock);
+                    }
+                    existente.setCantidadGeneral(acumulador);
+                } else {
+                    // Si no hay stocks y no se mandó cantidadGeneral -> poner 0
+                    if (existente.getCantidadGeneral() == null) {
+                        existente.setCantidadGeneral(0);
                     }
                 }
 
@@ -83,11 +105,11 @@ public class ProductoService {
             }
         }
 
+        // Crear nuevo producto
         Producto producto = new Producto();
         producto.setCodigoBarras(request.getCodigoBarras());
         producto.setNombre(request.getNombre());
         producto.setConcentracion(request.getConcentracion());
-        producto.setCantidadGeneral(request.getCantidadGeneral());
         producto.setPrecioVentaUnd(request.getPrecioVentaUnd());
         producto.setDescuento(request.getDescuento());
         producto.setLaboratorio(request.getLaboratorio());
@@ -100,25 +122,30 @@ public class ProductoService {
         producto.setTipoMedicamento(request.getTipoMedicamento());
         producto.setPresentacion(request.getPresentacion());
 
+        int acumuladorPadre = 0;
         if (request.getStocks() != null && !request.getStocks().isEmpty()) {
             for (var stockReq : request.getStocks()) {
                 Stock stock = new Stock();
                 stock.setCodigoStock(stockReq.getCodigoStock());
-                stock.setCantidadUnidades(stockReq.getCantidadUnidades());
-                acumuladorPadre += stockReq.getCantidadUnidades();
+                int cant = stockReq.getCantidadUnidades(); // int
+                acumuladorPadre += cant;
+                stock.setCantidadUnidades(cant);
                 stock.setFechaVencimiento(stockReq.getFechaVencimiento());
                 stock.setPrecioCompra(stockReq.getPrecioCompra());
                 stock.setProducto(producto);
                 producto.getStocks().add(stock);
             }
+            producto.setCantidadGeneral(acumuladorPadre);
+        } else {
+            // Si no hay stocks: usar lo que vino en el request o 0
+            producto.setCantidadGeneral(request.getCantidadGeneral() != null ? request.getCantidadGeneral() : 0);
         }
 
-        producto.setCantidadGeneral(acumuladorPadre);
         Producto guardado = productoRepository.save(producto);
         return guardado;
     }
 
-    // 2. Buscar producto por ID con stocks
+    // Buscar producto por ID con stocks
     public Producto buscarPorId(Long id) {
         Optional<Producto> prodOpt = productoRepository.findByIdWithStocks(id);
         if (prodOpt.isPresent() && prodOpt.get().isActivo()) {
@@ -128,8 +155,9 @@ public class ProductoService {
         return (prod.isPresent() && prod.get().isActivo()) ? prod.get() : null;
     }
 
-    // 3. Buscar producto por código de barras con stocks
+    // Buscar producto por código de barras con stocks
     public Producto buscarPorCodigoBarras(String codigoBarras) {
+        if (codigoBarras == null || codigoBarras.isBlank()) return null;
         Optional<Producto> prodOpt = productoRepository.findByCodigoBarrasWithStocks(codigoBarras);
         if (prodOpt.isPresent() && prodOpt.get().isActivo()) {
             return prodOpt.get();
@@ -138,29 +166,28 @@ public class ProductoService {
         return (prod != null && prod.isActivo()) ? prod : null;
     }
 
-    // 4. Listar todos los productos activos con stocks
+    // Listar todos los productos activos con stocks
     public List<Producto> listarTodos() {
         try {
-            List<Producto> productos = productoRepository.findByActivoTrueWithStocks();
-            return productos;
+            return productoRepository.findByActivoTrueWithStocks();
         } catch (Exception e) {
             return productoRepository.findByActivoTrue();
         }
     }
 
-    // 5. Agregar stock adicional
+    // Agregar stock adicional
     @Transactional
     public boolean agregarStock(AgregarStockRequest request) {
         Producto producto = null;
-        
-        // Intentar buscar por ID primero
+
+        // Buscar por ID
         if (request.getProductoId() != null) {
             Optional<Producto> prodOpt = productoRepository.findByIdWithStocks(request.getProductoId());
             producto = prodOpt.orElseGet(() -> productoRepository.findById(request.getProductoId()).orElse(null));
         }
-        
-        // Si no se encontró por ID, buscar por código de barras
-        if (producto == null && request.getCodigoBarras() != null) {
+
+        // Buscar por código de barras si no se encontró por ID
+        if (producto == null && request.getCodigoBarras() != null && !request.getCodigoBarras().isBlank()) {
             Optional<Producto> prodOpt = productoRepository.findByCodigoBarrasWithStocks(request.getCodigoBarras());
             producto = prodOpt.orElseGet(() -> productoRepository.findByCodigoBarras(request.getCodigoBarras()));
         }
@@ -171,38 +198,26 @@ public class ProductoService {
 
         Stock nuevoStock = new Stock();
         nuevoStock.setCodigoStock(request.getCodigoStock());
-        nuevoStock.setCantidadUnidades(request.getCantidadUnidades());
+        nuevoStock.setCantidadUnidades(request.getCantidadUnidades()); // int esperado
         nuevoStock.setFechaVencimiento(request.getFechaVencimiento());
         nuevoStock.setPrecioCompra(request.getPrecioCompra());
         nuevoStock.setProducto(producto);
 
         producto.getStocks().add(nuevoStock);
-        producto.setCantidadGeneral(producto.getCantidadGeneral() + request.getCantidadUnidades());
-        productoRepository.save(producto);
 
+        int actual = producto.getCantidadGeneral() != null ? producto.getCantidadGeneral() : 0;
+        int agregar = request.getCantidadUnidades(); // int
+        producto.setCantidadGeneral(actual + agregar);
+
+        productoRepository.save(producto);
         return true;
     }
 
-    // 6. Buscar por nombre o categoría con stocks (legacy endpoint)
+    // Buscar por nombre o categoría (legacy)
     public List<Producto> buscarPorNombreOCategoria(String nombre, String categoria) {
         try {
             List<Producto> todosConStocks = productoRepository.findByActivoTrueWithStocks();
-            if (nombre != null && categoria != null) {
-                return todosConStocks.stream()
-                        .filter(p -> p.getNombre().toLowerCase().contains(nombre.toLowerCase())
-                                && p.getCategoria().toLowerCase().contains(categoria.toLowerCase()))
-                        .toList();
-            } else if (nombre != null) {
-                return todosConStocks.stream()
-                        .filter(p -> p.getNombre().toLowerCase().contains(nombre.toLowerCase()))
-                        .toList();
-            } else if (categoria != null) {
-                return todosConStocks.stream()
-                        .filter(p -> p.getCategoria().toLowerCase().contains(categoria.toLowerCase()))
-                        .toList();
-            } else {
-                return todosConStocks;
-            }
+            return filtrarPorNombreCategoria(todosConStocks, nombre, categoria);
         } catch (Exception e) {
             if (nombre != null && categoria != null) {
                 return productoRepository.findByNombreContainingIgnoreCaseAndCategoriaContainingIgnoreCaseAndActivoTrue(nombre, categoria);
@@ -216,7 +231,24 @@ public class ProductoService {
         }
     }
 
-    // 7. Borrado lógico por ID (set activo=false)
+    private List<Producto> filtrarPorNombreCategoria(List<Producto> base, String nombre, String categoria) {
+        return base.stream()
+                .filter(p -> {
+                    boolean ok = true;
+                    if (nombre != null) {
+                        ok = ok && p.getNombre() != null &&
+                                p.getNombre().toLowerCase().contains(nombre.toLowerCase());
+                    }
+                    if (categoria != null) {
+                        ok = ok && p.getCategoria() != null &&
+                                p.getCategoria().toLowerCase().contains(categoria.toLowerCase());
+                    }
+                    return ok;
+                })
+                .toList();
+    }
+
+    // Borrado lógico por ID
     @Transactional
     public boolean eliminarPorId(Long id) {
         Optional<Producto> productoOpt = productoRepository.findById(id);
@@ -229,10 +261,11 @@ public class ProductoService {
         return false;
     }
 
-    // 8. Borrado lógico por código de barras (set activo=false) - Deprecated, usar eliminarPorId
+    // Borrado lógico por código de barras (Deprecated)
     @Transactional
     @Deprecated
     public boolean eliminarPorCodigoBarras(String codigoBarras) {
+        if (codigoBarras == null || codigoBarras.isBlank()) return false;
         Producto producto = productoRepository.findByCodigoBarras(codigoBarras);
         if (producto != null && producto.isActivo()) {
             producto.setActivo(false);
@@ -242,54 +275,27 @@ public class ProductoService {
         return false;
     }
 
-    // 9. Actualizar datos de un producto con stocks por código de barras - Deprecated, usar actualizarPorID
+    // Actualizar por código de barras (Deprecated)
     @Transactional
     @Deprecated
     public Producto actualizarPorCodigoBarras(String codigoBarras, ProductoRequest request) {
+        if (codigoBarras == null || codigoBarras.isBlank()) {
+            throw new IllegalArgumentException("Código de barras inválido.");
+        }
         Optional<Producto> prodOpt = productoRepository.findByCodigoBarrasWithStocks(codigoBarras);
         Producto producto = prodOpt.orElseGet(() -> productoRepository.findByCodigoBarras(codigoBarras));
 
         if (producto != null && producto.isActivo()) {
-            producto.setNombre(request.getNombre());
-            producto.setConcentracion(request.getConcentracion());
-            producto.setCantidadGeneral(request.getCantidadGeneral());
-            producto.setPrecioVentaUnd(request.getPrecioVentaUnd());
-            producto.setDescuento(request.getDescuento());
-            producto.setLaboratorio(request.getLaboratorio());
-            producto.setCategoria(request.getCategoria());
-            producto.setCantidadUnidadesBlister(request.getCantidadUnidadesBlister());
-            producto.setPrecioVentaBlister(request.getPrecioVentaBlister());
-            producto.setCantidadMinima(request.getCantidadMinima());
-            producto.setPrincipioActivo(request.getPrincipioActivo());
-            producto.setTipoMedicamento(request.getTipoMedicamento());
-            producto.setPresentacion(request.getPresentacion());
-
-            producto.getStocks().clear();
-
-            if (request.getStocks() != null && !request.getStocks().isEmpty()) {
-                for (var stockReq : request.getStocks()) {
-                    Stock stock = new Stock();
-                    stock.setCodigoStock(stockReq.getCodigoStock());
-                    stock.setCantidadUnidades(stockReq.getCantidadUnidades());
-                    stock.setFechaVencimiento(stockReq.getFechaVencimiento());
-                    stock.setPrecioCompra(stockReq.getPrecioCompra());
-                    stock.setProducto(producto);
-                    producto.getStocks().add(stock);
-                }
-            }
-
+            aplicarDatosProductoDesdeRequest(producto, request, true);
             Producto guardado = productoRepository.save(producto);
-
-            Optional<Producto> verificacion = productoRepository.findByCodigoBarrasWithStocks(codigoBarras);
-            return verificacion.orElse(guardado);
+            return productoRepository.findByCodigoBarrasWithStocks(codigoBarras).orElse(guardado);
         }
         return null;
     }
 
-    // 10. Actualizar datos de un producto con stocks por ID
+    // Actualizar por ID
     @Transactional
     public Producto actualizarPorID(Long id, ProductoRequest request) {
-        // Buscar producto o lanzar excepción si no existe
         Producto producto = productoRepository.findById(id)
                 .orElseThrow(() -> new IllegalArgumentException("Producto no encontrado con id: " + id));
 
@@ -297,11 +303,26 @@ public class ProductoService {
             throw new IllegalArgumentException("No se puede actualizar un producto inactivo");
         }
 
-        // Actualizar campos básicos
+        aplicarDatosProductoDesdeRequest(producto, request, true);
+
+        Producto guardado = productoRepository.save(producto);
+        return productoRepository.findByIdWithStocks(guardado.getId()).orElse(guardado);
+    }
+
+    /**
+     * Aplica los datos del request al producto.
+     * Si replaceStocks = true, limpia y recrea stocks.
+     * Recalcula cantidadGeneral si hay stocks nuevos; de lo contrario toma valor del request (o conserva si ambos null).
+     */
+    private void aplicarDatosProductoDesdeRequest(Producto producto, ProductoRequest request, boolean replaceStocks) {
+        // Sólo el nombre es obligatorio; validamos si se pretende cambiarlo.
+        if (request.getNombre() == null || request.getNombre().trim().isEmpty()) {
+            throw new IllegalArgumentException("El nombre del producto es obligatorio.");
+        }
+
         producto.setCodigoBarras(request.getCodigoBarras());
         producto.setNombre(request.getNombre());
         producto.setConcentracion(request.getConcentracion());
-        producto.setCantidadGeneral(request.getCantidadGeneral());
         producto.setPrecioVentaUnd(request.getPrecioVentaUnd());
         producto.setDescuento(request.getDescuento());
         producto.setLaboratorio(request.getLaboratorio());
@@ -313,52 +334,52 @@ public class ProductoService {
         producto.setTipoMedicamento(request.getTipoMedicamento());
         producto.setPresentacion(request.getPresentacion());
 
-        // Reemplazar stocks: requiere cascade = ALL y orphanRemoval = true en Producto.stocks
-        producto.getStocks().clear();
-
-        if (request.getStocks() != null && !request.getStocks().isEmpty()) {
-            for (var stockReq : request.getStocks()) {
-                Stock stock = new Stock();
-                // no seteamos id para crear nuevos registros; si quieres actualizar por id
-                // tendrías que buscar cada stock por id y actualizarlo en vez de crear nuevos
-                stock.setCodigoStock(stockReq.getCodigoStock());
-                stock.setCantidadUnidades(stockReq.getCantidadUnidades());
-                stock.setFechaVencimiento(stockReq.getFechaVencimiento());
-                stock.setPrecioCompra(stockReq.getPrecioCompra());
-                stock.setProducto(producto);
-                producto.getStocks().add(stock);
+        if (replaceStocks) {
+            producto.getStocks().clear();
+            int acumulador = 0;
+            if (request.getStocks() != null && !request.getStocks().isEmpty()) {
+                for (var stockReq : request.getStocks()) {
+                    Stock stock = new Stock();
+                    stock.setCodigoStock(stockReq.getCodigoStock());
+                    int cant = stockReq.getCantidadUnidades(); // int
+                    acumulador += cant;
+                    stock.setCantidadUnidades(cant);
+                    stock.setFechaVencimiento(stockReq.getFechaVencimiento());
+                    stock.setPrecioCompra(stockReq.getPrecioCompra());
+                    stock.setProducto(producto);
+                    producto.getStocks().add(stock);
+                }
+                producto.setCantidadGeneral(acumulador);
+            } else {
+                // Si no hay stocks nuevos: usar valor del request o conservar el existente
+                if (request.getCantidadGeneral() != null) {
+                    producto.setCantidadGeneral(request.getCantidadGeneral());
+                } else if (producto.getCantidadGeneral() == null) {
+                    producto.setCantidadGeneral(0);
+                }
+            }
+        } else {
+            // No se reemplazan stocks: sólo ajustar cantidadGeneral si vino explícita
+            if (request.getCantidadGeneral() != null) {
+                producto.setCantidadGeneral(request.getCantidadGeneral());
+            } else if (producto.getCantidadGeneral() == null) {
+                producto.setCantidadGeneral(0);
             }
         }
-
-        // Guardar cambios
-        Producto guardado = productoRepository.save(producto);
-
-        // Devolver el producto con stocks precargados (añadimos método en repo)
-        return productoRepository.findByIdWithStocks(guardado.getId()).orElse(guardado);
     }
 
-
-
-    // 11. Buscar productos con stock menor a cierto umbral con stocks
+    // Productos con stock menor a umbral
     public List<Producto> buscarProductosConStockMenorA(int umbral) {
         try {
             List<Producto> productos = productoRepository.findByActivoTrueWithStocks();
-            List<Producto> resultado = new ArrayList<>();
-            for (Producto p : productos) {
-                if (p.getCantidadGeneral() < umbral) {
-                    resultado.add(p);
-                }
-            }
-            return resultado;
+            return productos.stream()
+                    .filter(p -> (p.getCantidadGeneral() != null ? p.getCantidadGeneral() : 0) < umbral)
+                    .toList();
         } catch (Exception e) {
             List<Producto> productos = productoRepository.findByActivoTrue();
-            List<Producto> resultado = new ArrayList<>();
-            for (Producto p : productos) {
-                if (p.getCantidadGeneral() < umbral) {
-                    resultado.add(p);
-                }
-            }
-            return resultado;
+            return productos.stream()
+                    .filter(p -> (p.getCantidadGeneral() != null ? p.getCantidadGeneral() : 0) < umbral)
+                    .toList();
         }
     }
 
@@ -403,7 +424,7 @@ public class ProductoService {
     }
 
     public List<DashboardResumenDTO.ProductoMasVendidoDTO> getProductosMasVendidosDTO(int top) {
-        List<Object[]> resultados = productoRepository.findProductosMasVendidos((Pageable) PageRequest.of(0, top));
+        List<Object[]> resultados = productoRepository.findProductosMasVendidos(PageRequest.of(0, top));
         return resultados.stream().map(r -> {
             DashboardResumenDTO.ProductoMasVendidoDTO dto = new DashboardResumenDTO.ProductoMasVendidoDTO();
             dto.nombre = (String) r[0];
@@ -416,11 +437,11 @@ public class ProductoService {
     public List<DashboardResumenDTO.ProductoCriticoDTO> getProductosCriticosDTO() {
         int umbralCritico = 10;
         return listarTodos().stream()
-                .filter(p -> p.getCantidadGeneral() < umbralCritico)
+                .filter(p -> (p.getCantidadGeneral() != null ? p.getCantidadGeneral() : 0) < umbralCritico)
                 .map(p -> {
                     DashboardResumenDTO.ProductoCriticoDTO dto = new DashboardResumenDTO.ProductoCriticoDTO();
                     dto.nombre = p.getNombre();
-                    dto.stock = p.getCantidadGeneral();
+                    dto.stock = p.getCantidadGeneral() != null ? p.getCantidadGeneral() : 0;
                     return dto;
                 }).collect(Collectors.toList());
     }
@@ -448,12 +469,14 @@ public class ProductoService {
                 .collect(Collectors.toList());
     }
 
-    // Métodos de paginación compatibles (legacy)
+    // Paginación legacy
     public List<Producto> listarTodosPaginado(int page, int size) {
         Pageable pageable = PageRequest.of(page, size);
         Page<Producto> paged = productoRepository.findByActivoTrue(pageable);
         List<Producto> productos = paged.getContent();
-        productos.forEach(p -> p.getStocks().size());
+        productos.forEach(p -> {
+            if (p.getStocks() != null) p.getStocks().size();
+        });
         return productos;
     }
 
@@ -462,17 +485,22 @@ public class ProductoService {
         return productoRepository.findByActivoTrue(pageable);
     }
 
-    // Nuevo: búsqueda paginada con filtros (q, lab, cat) y carga de stocks
+    // Búsqueda paginada con filtros
     public Page<Producto> buscarPaginadoPorQuery(String q, String lab, String cat, Pageable pageable) {
         Page<Producto> paged;
         boolean anyFilter = (q != null && !q.trim().isEmpty()) || (lab != null && !lab.isBlank()) || (cat != null && !cat.isBlank());
         if (!anyFilter) {
             paged = productoRepository.findByActivoTrue(pageable);
         } else {
-            paged = productoRepository.search(q == null ? null : q.trim(), lab == null ? null : lab.trim(), cat == null ? null : cat.trim(), pageable);
+            paged = productoRepository.search(
+                    q == null ? null : q.trim(),
+                    lab == null ? null : lab.trim(),
+                    cat == null ? null : cat.trim(),
+                    pageable
+            );
         }
 
-        // Forzar carga de stocks para los productos de la página
+        // Forzar carga de stocks
         paged.getContent().forEach(p -> {
             if (p.getStocks() != null) p.getStocks().size();
         });

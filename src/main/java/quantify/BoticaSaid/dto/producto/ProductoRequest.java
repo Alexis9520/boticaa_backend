@@ -1,24 +1,35 @@
 package quantify.BoticaSaid.dto.producto;
 
+import jakarta.validation.constraints.NotBlank;
 import quantify.BoticaSaid.dto.stock.StockRequest;
+
 import java.math.BigDecimal;
 import java.util.List;
 
 public class ProductoRequest {
     private Long id;
     private String codigoBarras;
+
+    @NotBlank(message = "El nombre del producto es obligatorio")
     private String nombre;
+
     private String concentracion;
-    private int cantidadGeneral;
+
+    // Ahora opcional (permite null)
+    private Integer cantidadGeneral;
+
     private Integer cantidadMinima;
     private BigDecimal precioVentaUnd;
     private BigDecimal descuento;
     private String laboratorio;
     private String categoria;
-    private int cantidadUnidadesBlister;
+
+    // Ahora opcional (permite null)
+    private Integer cantidadUnidadesBlister;
+
     private BigDecimal precioVentaBlister;
 
-    // NUEVOS CAMPOS
+    // Nuevos campos (también opcionales)
     private String principioActivo;
     private String tipoMedicamento;
     private String presentacion;
@@ -27,53 +38,12 @@ public class ProductoRequest {
 
     // Getters y setters
 
-
     public Long getId() {
         return id;
     }
 
     public void setId(Long id) {
         this.id = id;
-    }
-
-    public String getPrincipioActivo() {
-        return principioActivo;
-    }
-
-    public void setPrincipioActivo(String principioActivo) {
-        this.principioActivo = principioActivo;
-    }
-
-    public String getTipoMedicamento() {
-        return tipoMedicamento;
-    }
-
-    public void setTipoMedicamento(String tipoMedicamento) {
-        this.tipoMedicamento = tipoMedicamento;
-    }
-
-    public Integer getCantidadMinima() {
-        return cantidadMinima;
-    }
-
-    public void setCantidadMinima(Integer cantidadMinima) {
-        this.cantidadMinima = cantidadMinima;
-    }
-
-    public int getCantidadUnidadesBlister() {
-        return cantidadUnidadesBlister;
-    }
-
-    public void setCantidadUnidadesBlister(int cantidadUnidadesBlister) {
-        this.cantidadUnidadesBlister = cantidadUnidadesBlister;
-    }
-
-    public BigDecimal getPrecioVentaBlister() {
-        return precioVentaBlister;
-    }
-
-    public void setPrecioVentaBlister(BigDecimal precioBlister) {
-        this.precioVentaBlister = precioBlister;
     }
 
     public String getCodigoBarras() {
@@ -100,12 +70,20 @@ public class ProductoRequest {
         this.concentracion = concentracion;
     }
 
-    public int getCantidadGeneral() {
+    public Integer getCantidadGeneral() {
         return cantidadGeneral;
     }
 
-    public void setCantidadGeneral(int cantidadGeneral) {
+    public void setCantidadGeneral(Integer cantidadGeneral) {
         this.cantidadGeneral = cantidadGeneral;
+    }
+
+    public Integer getCantidadMinima() {
+        return cantidadMinima;
+    }
+
+    public void setCantidadMinima(Integer cantidadMinima) {
+        this.cantidadMinima = cantidadMinima;
     }
 
     public BigDecimal getPrecioVentaUnd() {
@@ -140,6 +118,46 @@ public class ProductoRequest {
         this.categoria = categoria;
     }
 
+    public Integer getCantidadUnidadesBlister() {
+        return cantidadUnidadesBlister;
+    }
+
+    public void setCantidadUnidadesBlister(Integer cantidadUnidadesBlister) {
+        this.cantidadUnidadesBlister = cantidadUnidadesBlister;
+    }
+
+    public BigDecimal getPrecioVentaBlister() {
+        return precioVentaBlister;
+    }
+
+    public void setPrecioVentaBlister(BigDecimal precioVentaBlister) {
+        this.precioVentaBlister = precioVentaBlister;
+    }
+
+    public String getPrincipioActivo() {
+        return principioActivo;
+    }
+
+    public void setPrincipioActivo(String principioActivo) {
+        this.principioActivo = principioActivo;
+    }
+
+    public String getTipoMedicamento() {
+        return tipoMedicamento;
+    }
+
+    public void setTipoMedicamento(String tipoMedicamento) {
+        this.tipoMedicamento = tipoMedicamento;
+    }
+
+    public String getPresentacion() {
+        return presentacion;
+    }
+
+    public void setPresentacion(String presentacion) {
+        this.presentacion = presentacion;
+    }
+
     public List<StockRequest> getStocks() {
         return stocks;
     }
@@ -147,6 +165,4 @@ public class ProductoRequest {
     public void setStocks(List<StockRequest> stocks) {
         this.stocks = stocks;
     }
-    public String getPresentacion() { return presentacion; }
-    public void setPresentacion(String presentacion) { this.presentacion = presentacion; }
 }
