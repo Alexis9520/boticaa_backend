@@ -5,6 +5,7 @@ public class MetodoPagoDTO {
     private String nombre;
     private Double efectivo;
     private Double digital;
+    private Double efectivoFix;
 
     public String getNombre() {
         return nombre;
@@ -16,6 +17,14 @@ public class MetodoPagoDTO {
 
     public Double getEfectivo() {
         return efectivo;
+    }
+
+    public Double getEfectivoFix() {
+        return efectivoFix;
+    }
+
+    public void setEfectivoFix(Double efectivoFix) {
+        this.efectivoFix = efectivoFix;
     }
 
     public void setEfectivo(Double efectivo) {

@@ -22,12 +22,21 @@ public class MetodoPago {
 
     @Column(name = "yape")
     private double digital;
-
+    @Column(name = "efectivoFix")
+    private Double efectivoFix;
     @OneToOne
     @JoinColumn(name = "boleta_id", referencedColumnName = "id")
     private Boleta boleta;
 
     // Getters y setters
+
+    public double getEfectivoFix() {
+        return efectivoFix;
+    }
+
+    public void setEfectivoFix(double efectivoFix) {
+        this.efectivoFix = efectivoFix;
+    }
 
     public Integer getId() {
         return id;

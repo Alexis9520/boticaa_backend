@@ -9,6 +9,7 @@ public class CajaResumenDTO {
 
     private BigDecimal efectivoInicial;
     private BigDecimal efectivoFinal;
+    private BigDecimal efectivoFinalDeclarado;
     private BigDecimal ingresos;
     private BigDecimal egresos;
     private BigDecimal ventasEfectivo;
@@ -26,6 +27,15 @@ public class CajaResumenDTO {
     private BigDecimal totalYape;
 
     // Getters / Setters
+
+    public BigDecimal getEfectivoFinalDeclarado() {
+        return efectivoFinalDeclarado;
+    }
+
+    public void setEfectivoFinalDeclarado(BigDecimal efectivoFinalDeclarado) {
+        this.efectivoFinalDeclarado = efectivoFinalDeclarado;
+    }
+
     public Integer getId() { return id; }
     public void setId(Integer id) { this.id = id; }
 

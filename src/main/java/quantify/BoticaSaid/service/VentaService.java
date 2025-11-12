@@ -96,6 +96,8 @@ public class VentaService {
 
         double efectivo = ventaDTO.getMetodoPago().getEfectivo() != null ? ventaDTO.getMetodoPago().getEfectivo() : 0.0;
         double digital = ventaDTO.getMetodoPago().getDigital() != null ? ventaDTO.getMetodoPago().getDigital() : 0.0;
+        double efectivoFix = ventaDTO.getMetodoPago().getEfectivoFix() != null ? ventaDTO.getMetodoPago().getEfectivoFix() : 0.0;
+
         double ingresoTotal = efectivo + digital;
 
         for (DetalleProductoDTO producto : ventaDTO.getProductos()) {
@@ -137,6 +139,7 @@ public class VentaService {
         MetodoPago metodoPago = new MetodoPago();
         metodoPago.setNombre(nombreMetodo);
         metodoPago.setEfectivo(efectivo);
+        metodoPago.setEfectivoFix(efectivoFix);
         metodoPago.setDigital(digital);
 
         Boleta boleta = new Boleta();
@@ -257,28 +260,22 @@ public class VentaService {
         movimiento.setEsManual(false);
         movimientoEfectivoRepository.save(movimiento);
 
-        if (nombreMetodo == MetodoPago.NombreMetodo.EFECTIVO) {
-            cajaAbierta.setEfectivoFinal(
-                    (cajaAbierta.getEfectivoFinal() != null ? cajaAbierta.getEfectivoFinal() : BigDecimal.ZERO)
-                            .add(BigDecimal.valueOf(efectivo))
-            );
-        } else if (nombreMetodo == MetodoPago.NombreMetodo.YAPE) {
-            cajaAbierta.setTotalYape(
-                    (cajaAbierta.getTotalYape() != null ? cajaAbierta.getTotalYape() : BigDecimal.ZERO)
-                            .add(BigDecimal.valueOf(digital))
-            );
-        } else if (nombreMetodo == MetodoPago.NombreMetodo.MIXTO) {
-            cajaAbierta.setEfectivoFinal(
-                    (cajaAbierta.getEfectivoFinal() != null ? cajaAbierta.getEfectivoFinal() : BigDecimal.ZERO)
-                            .add(BigDecimal.valueOf(efectivo))
-            );
-            cajaAbierta.setTotalYape(
-                    (cajaAbierta.getTotalYape() != null ? cajaAbierta.getTotalYape() : BigDecimal.ZERO)
-                            .add(BigDecimal.valueOf(digital))
-            );
-        }
+        BigDecimal efectivoRecibido = BigDecimal.valueOf(efectivoFix);
+        BigDecimal digitalRecibido = BigDecimal.valueOf(digital);
+
+
+        cajaAbierta.setEfectivoFinal(
+                (cajaAbierta.getEfectivoFinal() != null ? cajaAbierta.getEfectivoFinal() : BigDecimal.ZERO)
+                        .add(efectivoRecibido) // Sumamos el efectivo NETO
+        );
+
+        cajaAbierta.setTotalYape(
+                (cajaAbierta.getTotalYape() != null ? cajaAbierta.getTotalYape() : BigDecimal.ZERO)
+                        .add(digitalRecibido) // Sumamos el digital (este no tiene vuelto)
+        );
 
         cajaRepository.save(cajaAbierta);
+
 
         // Retornar la venta registrada como DTO para el frontend
         return convertirABoletaResponseDTO(boletaGuardada);
