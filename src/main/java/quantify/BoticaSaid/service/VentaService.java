@@ -3,7 +3,11 @@ package quantify.BoticaSaid.service;
 import jakarta.transaction.Transactional;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
-import quantify.BoticaSaid.dto.*;
+import quantify.BoticaSaid.dto.dashboard.DashboardResumenDTO;
+import quantify.BoticaSaid.dto.producto.DetalleProductoDTO;
+import quantify.BoticaSaid.dto.venta.VentaRequestDTO;
+import quantify.BoticaSaid.dto.venta.VentaResponseDTO;
+import quantify.BoticaSaid.dto.venta.VentasPorHoraDTO;
 import quantify.BoticaSaid.model.*;
 import quantify.BoticaSaid.repository.*;
 
@@ -53,6 +57,30 @@ public class VentaService {
         return "B-" + fecha + "-" + secuencia;
     }
 
+    // Helper method to find product by ID or barcode
+    private Producto buscarProductoPorIdOCodigoBarras(DetalleProductoDTO item) {
+        Producto producto = null;
+        
+        // Intentar buscar por ID primero
+        if (item.getId() != null) {
+            producto = productoRepository.findById(item.getId()).orElse(null);
+        }
+        
+        // Si no se encontró por ID, buscar por código de barras
+        if (producto == null && item.getCodBarras() != null) {
+            producto = productoRepository.findByCodigoBarras(item.getCodBarras());
+        }
+        
+        if (producto == null) {
+            String identifier = item.getId() != null 
+                ? "ID: " + item.getId() 
+                : "Código de barras: " + item.getCodBarras();
+            throw new RuntimeException("Producto no encontrado: " + identifier);
+        }
+        
+        return producto;
+    }
+
     @Transactional
     public VentaResponseDTO registrarVenta(VentaRequestDTO ventaDTO) {
         Usuario usuario = usuarioRepository.findByDni(ventaDTO.getDniVendedor())
@@ -68,21 +96,23 @@ public class VentaService {
 
         double efectivo = ventaDTO.getMetodoPago().getEfectivo() != null ? ventaDTO.getMetodoPago().getEfectivo() : 0.0;
         double digital = ventaDTO.getMetodoPago().getDigital() != null ? ventaDTO.getMetodoPago().getDigital() : 0.0;
+        double efectivoFix = ventaDTO.getMetodoPago().getEfectivoFix() != null ? ventaDTO.getMetodoPago().getEfectivoFix() : 0.0;
+
         double ingresoTotal = efectivo + digital;
 
         for (DetalleProductoDTO producto : ventaDTO.getProductos()) {
             if (producto.getCantidad() <= 0) {
-                throw new RuntimeException("No se puede vender cantidades iguales o menores a cero para el producto con código de barras: " + producto.getCodBarras());
+                String identifier = producto.getId() != null 
+                    ? "ID: " + producto.getId() 
+                    : "Código de barras: " + producto.getCodBarras();
+                throw new RuntimeException("No se puede vender cantidades iguales o menores a cero para el producto con " + identifier);
             }
         }
         BigDecimal totalVentaCalculado = BigDecimal.ZERO;
 
         //Calcular el total real de la venta antes de continuar
         for (DetalleProductoDTO item : ventaDTO.getProductos()) {
-            Producto producto = productoRepository.findByCodigoBarras(item.getCodBarras());
-            if (producto == null) {
-                throw new RuntimeException("Producto no encontrado: " + item.getCodBarras());
-            }
+            Producto producto = buscarProductoPorIdOCodigoBarras(item);
             int unidadesPorBlister = producto.getCantidadUnidadesBlister() != null ? producto.getCantidadUnidadesBlister() : 0;
             BigDecimal precioBlister = producto.getPrecioVentaBlister();
             BigDecimal precioUnidad = producto.getPrecioVentaUnd();
@@ -109,6 +139,7 @@ public class VentaService {
         MetodoPago metodoPago = new MetodoPago();
         metodoPago.setNombre(nombreMetodo);
         metodoPago.setEfectivo(efectivo);
+        metodoPago.setEfectivoFix(efectivoFix);
         metodoPago.setDigital(digital);
 
         Boleta boleta = new Boleta();
@@ -127,17 +158,16 @@ public class VentaService {
         BigDecimal totalVenta = BigDecimal.ZERO;
 
         for (DetalleProductoDTO item : ventaDTO.getProductos()) {
-            String codBarras = item.getCodBarras();
             int cantidadSolicitada = item.getCantidad();
 
             if (cantidadSolicitada <= 0) {
-                throw new RuntimeException("No se puede vender cantidades iguales o menores a cero para el producto con código de barras: " + codBarras);
+                String identifier = item.getId() != null 
+                    ? "ID: " + item.getId() 
+                    : "Código de barras: " + item.getCodBarras();
+                throw new RuntimeException("No se puede vender cantidades iguales o menores a cero para el producto con " + identifier);
             }
 
-            Producto producto = productoRepository.findByCodigoBarras(codBarras);
-            if (producto == null) {
-                throw new RuntimeException("Producto no encontrado: " + codBarras);
-            }
+            Producto producto = buscarProductoPorIdOCodigoBarras(item);
 
             List<Stock> stocks = stockRepository.findByProductoOrderByFechaVencimientoAsc(producto);
 
@@ -205,7 +235,10 @@ public class VentaService {
                 }
             }
             if ((cantidadRestanteBlister > 0 && cantidadBlisters > 0) || cantidadRestanteUnidad > 0) {
-                throw new RuntimeException("Stock insuficiente para el producto con código de barras: " + codBarras);
+                String identifier = item.getId() != null 
+                    ? "ID: " + item.getId() 
+                    : "Código de barras: " + item.getCodBarras();
+                throw new RuntimeException("Stock insuficiente para el producto con " + identifier);
             }
 
             producto.setCantidadGeneral(producto.getCantidadGeneral() - cantidadSolicitada);
@@ -227,28 +260,22 @@ public class VentaService {
         movimiento.setEsManual(false);
         movimientoEfectivoRepository.save(movimiento);
 
-        if (nombreMetodo == MetodoPago.NombreMetodo.EFECTIVO) {
-            cajaAbierta.setEfectivoFinal(
-                    (cajaAbierta.getEfectivoFinal() != null ? cajaAbierta.getEfectivoFinal() : BigDecimal.ZERO)
-                            .add(BigDecimal.valueOf(efectivo))
-            );
-        } else if (nombreMetodo == MetodoPago.NombreMetodo.YAPE) {
-            cajaAbierta.setTotalYape(
-                    (cajaAbierta.getTotalYape() != null ? cajaAbierta.getTotalYape() : BigDecimal.ZERO)
-                            .add(BigDecimal.valueOf(digital))
-            );
-        } else if (nombreMetodo == MetodoPago.NombreMetodo.MIXTO) {
-            cajaAbierta.setEfectivoFinal(
-                    (cajaAbierta.getEfectivoFinal() != null ? cajaAbierta.getEfectivoFinal() : BigDecimal.ZERO)
-                            .add(BigDecimal.valueOf(efectivo))
-            );
-            cajaAbierta.setTotalYape(
-                    (cajaAbierta.getTotalYape() != null ? cajaAbierta.getTotalYape() : BigDecimal.ZERO)
-                            .add(BigDecimal.valueOf(digital))
-            );
-        }
+        BigDecimal efectivoRecibido = BigDecimal.valueOf(efectivoFix);
+        BigDecimal digitalRecibido = BigDecimal.valueOf(digital);
+
+
+        cajaAbierta.setEfectivoFinal(
+                (cajaAbierta.getEfectivoFinal() != null ? cajaAbierta.getEfectivoFinal() : BigDecimal.ZERO)
+                        .add(efectivoRecibido) // Sumamos el efectivo NETO
+        );
+
+        cajaAbierta.setTotalYape(
+                (cajaAbierta.getTotalYape() != null ? cajaAbierta.getTotalYape() : BigDecimal.ZERO)
+                        .add(digitalRecibido) // Sumamos el digital (este no tiene vuelto)
+        );
 
         cajaRepository.save(cajaAbierta);
+
 
         // Retornar la venta registrada como DTO para el frontend
         return convertirABoletaResponseDTO(boletaGuardada);

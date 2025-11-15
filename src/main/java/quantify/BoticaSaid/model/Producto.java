@@ -1,6 +1,8 @@
 package quantify.BoticaSaid.model;
 
 import jakarta.persistence.*;
+import jakarta.validation.constraints.NotBlank;
+
 import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.Date;
@@ -14,18 +16,22 @@ public class Producto {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
+    // Puede ser null y sigue siendo único cuando tiene valor
     @Column(name = "codigo_barras", length = 255, unique = true)
     private String codigoBarras;
 
+    @NotBlank
+    @Column(nullable = false)
     private String nombre;
 
     private String concentracion;
 
+    // Ahora opcional (permite null)
     @Column(name = "cantidad_general")
-    private int cantidadGeneral;
+    private Integer cantidadGeneral;
 
     @Column(name = "cantidad_minima")
-    private Integer cantidadMinima; // NUEVO CAMPO
+    private Integer cantidadMinima;
 
     @Column(name = "precio_venta_und")
     private BigDecimal precioVentaUnd;
@@ -37,7 +43,7 @@ public class Producto {
 
     private String categoria;
 
-    // NUEVOS CAMPOS:
+    // Nuevos campos (opcionales)
     @Column(name = "principio_activo")
     private String principioActivo;
 
@@ -48,9 +54,11 @@ public class Producto {
     private String presentacion;
 
     @Column(name = "fecha_creacion", insertable = false, updatable = false)
+    @Temporal(TemporalType.TIMESTAMP)
     private Date fechaCreacion;
 
     @Column(name = "fecha_actualizacion", insertable = false, updatable = false)
+    @Temporal(TemporalType.TIMESTAMP)
     private Date fechaActualizacion;
 
     @Column(nullable = false)
@@ -101,11 +109,11 @@ public class Producto {
         this.concentracion = concentracion;
     }
 
-    public int getCantidadGeneral() {
+    public Integer getCantidadGeneral() {
         return cantidadGeneral;
     }
 
-    public void setCantidadGeneral(int cantidadGeneral) {
+    public void setCantidadGeneral(Integer cantidadGeneral) {
         this.cantidadGeneral = cantidadGeneral;
     }
 
@@ -165,6 +173,14 @@ public class Producto {
         this.tipoMedicamento = tipoMedicamento;
     }
 
+    public String getPresentacion() {
+        return presentacion;
+    }
+
+    public void setPresentacion(String presentacion) {
+        this.presentacion = presentacion;
+    }
+
     public Date getFechaCreacion() {
         return fechaCreacion;
     }
@@ -181,20 +197,20 @@ public class Producto {
         this.fechaActualizacion = fechaActualizacion;
     }
 
-    public List<Stock> getStocks() {
-        return stocks;
-    }
-
-    public void setStocks(List<Stock> stocks) {
-        this.stocks = stocks;
-    }
-
     public boolean isActivo() {
         return activo;
     }
 
     public void setActivo(boolean activo) {
         this.activo = activo;
+    }
+
+    public List<Stock> getStocks() {
+        return stocks;
+    }
+
+    public void setStocks(List<Stock> stocks) {
+        this.stocks = stocks;
     }
 
     public Integer getCantidadUnidadesBlister() {
@@ -211,11 +227,5 @@ public class Producto {
 
     public void setPrecioVentaBlister(BigDecimal precioVentaBlister) {
         this.precioVentaBlister = precioVentaBlister;
-    }
-    public String getPresentacion() {
-        return presentacion;
-    }
-    public void setPresentacion(String presentacion) {
-        this.presentacion = presentacion;
     }
 }

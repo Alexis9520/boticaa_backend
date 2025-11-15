@@ -28,6 +28,9 @@ public class Caja {
     @Column(name = "efectivo_final", precision = 12, scale = 2) // Puede ser null hasta que se cierra
     private BigDecimal efectivoFinal;
 
+    @Column(name = "efectivo_final_declarado", precision = 12, scale = 2)
+    private BigDecimal efectivoFinalDeclarado;
+
     @Column(name = "total_yape", precision = 12, scale = 2) // Puede ser null si no hay transacciones yape
     private BigDecimal totalYape;
 
@@ -39,6 +42,15 @@ public class Caja {
     private java.util.List<MovimientoEfectivo> movimientos;
 
     // --- Getters y Setters ---
+
+    public void setEfectivoFinalDeclarado(BigDecimal efectivoFinalDeclarado) {
+        this.efectivoFinalDeclarado = efectivoFinalDeclarado;
+    }
+
+    public BigDecimal getEfectivoFinalDeclarado() {
+        return efectivoFinalDeclarado;
+    }
+
     public Integer getId() {
         return id;
     }

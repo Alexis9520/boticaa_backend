@@ -3,7 +3,7 @@ package quantify.BoticaSaid.controller;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.web.bind.annotation.*;
-import quantify.BoticaSaid.dto.UsuarioDto;
+import quantify.BoticaSaid.dto.auth.UsuarioDto;
 import quantify.BoticaSaid.model.Usuario;
 import quantify.BoticaSaid.service.UsuarioService;
 import org.springframework.http.ResponseEntity;

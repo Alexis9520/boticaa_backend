@@ -6,9 +6,9 @@ import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.server.ResponseStatusException;
-import quantify.BoticaSaid.dto.AuthRequest;
-import quantify.BoticaSaid.dto.AuthResponse;
-import quantify.BoticaSaid.dto.RegisterRequest;
+import quantify.BoticaSaid.dto.auth.AuthRequest;
+import quantify.BoticaSaid.dto.auth.AuthResponse;
+import quantify.BoticaSaid.dto.auth.RegisterRequest;
 import quantify.BoticaSaid.service.AuthService;
 
 import java.util.Map;

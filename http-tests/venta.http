@@ -1,0 +1,177 @@
+### Sales Operations Tests
+### Base URL
+@baseUrl = http://localhost:8080
+@contentType = application/json
+
+### Variables
+@authToken = Bearer YOUR_TOKEN_HERE
+@ventaId = 1
+@boletaNumero = BOL-001
+
+###############################################################################
+### 1. Register New Sale - Cash Payment
+POST {{baseUrl}}/ventas
+Content-Type: {{contentType}}
+Authorization: {{authToken}}
+
+{
+  "numero": "BOL-001",
+  "dniCliente": "12345678",
+  "nombreCliente": "Juan Pérez",
+  "dniVendedor": "87654321",
+  "metodoPago": {
+    "nombre": "EFECTIVO",
+    "efectivo": 50.00,
+    "digital": 0.00
+  },
+  "productos": [
+    {
+      "id": 1,
+      "codBarras": "7501234567890",
+      "nombre": "Paracetamol",
+      "cantidad": 2,
+      "precio": 2.50
+    },
+    {
+      "id": 2,
+      "codBarras": "7502345678901",
+      "nombre": "Ibuprofeno",
+      "cantidad": 1,
+      "precio": 3.50
+    }
+  ]
+}
+
+###############################################################################
+### 2. Register New Sale - Digital Payment (Yape)
+POST {{baseUrl}}/ventas
+Content-Type: {{contentType}}
+Authorization: {{authToken}}
+
+{
+  "numero": "BOL-002",
+  "dniCliente": "23456789",
+  "nombreCliente": "María García",
+  "dniVendedor": "87654321",
+  "metodoPago": {
+    "nombre": "YAPE",
+    "efectivo": 0.00,
+    "digital": 30.00
+  },
+  "productos": [
+    {
+      "codBarras": "7501234567890",
+      "nombre": "Paracetamol",
+      "cantidad": 5,
+      "precio": 2.50
+    },
+    {
+      "codBarras": "7502345678901",
+      "nombre": "Ibuprofeno",
+      "cantidad": 3,
+      "precio": 3.50
+    }
+  ]
+}
+
+###############################################################################
+### 3. Register New Sale - Mixed Payment
+POST {{baseUrl}}/ventas
+Content-Type: {{contentType}}
+Authorization: {{authToken}}
+
+{
+  "numero": "BOL-003",
+  "dniCliente": "34567890",
+  "nombreCliente": "Carlos López",
+  "dniVendedor": "87654321",
+  "metodoPago": {
+    "nombre": "MIXTO",
+    "efectivo": 20.00,
+    "digital": 15.00
+  },
+  "productos": [
+    {
+      "codBarras": "7501234567890",
+      "nombre": "Paracetamol",
+      "cantidad": 10,
+      "precio": 2.50
+    }
+  ]
+}
+
+###############################################################################
+### 4. Register Sale by Product ID (instead of barcode)
+POST {{baseUrl}}/ventas
+Content-Type: {{contentType}}
+Authorization: {{authToken}}
+
+{
+  "numero": "BOL-004",
+  "dniCliente": "45678901",
+  "nombreCliente": "Ana Martínez",
+  "dniVendedor": "87654321",
+  "metodoPago": {
+    "nombre": "EFECTIVO",
+    "efectivo": 100.00,
+    "digital": 0.00
+  },
+  "productos": [
+    {
+      "id": 1,
+      "nombre": "Paracetamol",
+      "cantidad": 3,
+      "precio": 2.50
+    }
+  ]
+}
+
+###############################################################################
+### 5. Get Sale by ID
+GET {{baseUrl}}/ventas/{{ventaId}}
+Authorization: {{authToken}}
+
+###############################################################################
+### 6. List All Sales (with pagination)
+GET {{baseUrl}}/ventas?page=0&size=10
+Authorization: {{authToken}}
+
+###############################################################################
+### 7. Get Today's Sales
+GET {{baseUrl}}/ventas/hoy
+Authorization: {{authToken}}
+
+###############################################################################
+### 8. Get Sales by Date Range
+GET {{baseUrl}}/ventas?fechaInicio=2025-01-01&fechaFin=2025-12-31
+Authorization: {{authToken}}
+
+###############################################################################
+### 9. Get Sales by Client DNI
+GET {{baseUrl}}/ventas/cliente/12345678
+Authorization: {{authToken}}
+
+###############################################################################
+### 10. Get Sales by Seller DNI
+GET {{baseUrl}}/ventas/vendedor/87654321
+Authorization: {{authToken}}
+
+###############################################################################
+### 11. Get Sales Statistics
+GET {{baseUrl}}/ventas/estadisticas
+Authorization: {{authToken}}
+
+###############################################################################
+### 12. Get Sales by Hour
+GET {{baseUrl}}/ventas/por-hora
+Authorization: {{authToken}}
+
+###############################################################################
+### 13. Get Best Selling Products
+GET {{baseUrl}}/ventas/productos-mas-vendidos?limite=10
+Authorization: {{authToken}}
+
+###############################################################################
+### 14. Cancel/Delete Sale
+DELETE {{baseUrl}}/ventas/{{ventaId}}
+Authorization: {{authToken}}
