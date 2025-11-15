@@ -1,0 +1,97 @@
+### Nuevos Endpoints - API BoticaSaid
+### Descripción: Endpoints para listar productos por proveedor, reportes de lotes y proveedores
+
+@baseUrl = http://localhost:8080
+@authToken = Bearer {{token}}
+
+### ============================================================
+### 1. LISTAR PRODUCTOS POR PROVEEDOR
+### ============================================================
+
+### 1.1 Obtener productos de un proveedor específico
+GET {{baseUrl}}/productos/proveedor/1
+Authorization: {{authToken}}
+
+### ============================================================
+### 2. REPORTES DE LOTES POR RANGO DE FECHAS
+### ============================================================
+
+### 2.1 Obtener reporte de lotes agregados en un rango de fechas
+# Formato de fechas: ISO 8601 (yyyy-MM-dd o yyyy-MM-ddTHH:mm:ss)
+GET {{baseUrl}}/api/reports/lotes?fechaInicio=2025-01-01&fechaFin=2025-12-31
+Authorization: {{authToken}}
+
+### 2.2 Obtener reporte de lotes del último mes
+GET {{baseUrl}}/api/reports/lotes?fechaInicio=2025-10-15&fechaFin=2025-11-15
+Authorization: {{authToken}}
+
+### ============================================================
+### 3. REPORTE DE PROVEEDORES CON SUS PRODUCTOS
+### ============================================================
+
+### 3.1 Obtener reporte completo de todos los proveedores con sus productos
+GET {{baseUrl}}/api/reports/proveedores
+Authorization: {{authToken}}
+
+### ============================================================
+### 4. EXPORTAR PRODUCTOS POR RANGO DE FECHAS
+### ============================================================
+
+### 4.1 Exportar productos creados en un rango de fechas a Excel
+# Este endpoint descarga un archivo Excel (.xlsx)
+GET {{baseUrl}}/api/reports/productos/export?fechaInicio=2025-01-01&fechaFin=2025-12-31
+Authorization: {{authToken}}
+
+### 4.2 Exportar productos del último trimestre
+GET {{baseUrl}}/api/reports/productos/export?fechaInicio=2025-08-01&fechaFin=2025-11-15
+Authorization: {{authToken}}
+
+### ============================================================
+### NOTAS:
+### ============================================================
+# - Todos los endpoints requieren autenticación (Bearer Token)
+# - Los reportes de fechas aceptan formato ISO 8601
+# - El endpoint de exportación retorna un archivo Excel directamente
+# - Los lotes incluyen información del producto asociado
+# - El reporte de proveedores incluye la lista completa de productos activos
+
+### ============================================================
+### EJEMPLOS DE RESPUESTA ESPERADA
+### ============================================================
+
+### Respuesta esperada para /api/reports/lotes:
+# [
+#   {
+#     "productoId": 1,
+#     "nombreProducto": "Paracetamol 500mg",
+#     "codigoBarras": "123456789",
+#     "stockId": 100,
+#     "codigoStock": "LOTE-2025-001",
+#     "cantidadUnidades": 100,
+#     "fechaVencimiento": "2026-12-31",
+#     "precioCompra": 5.50,
+#     "fechaCreacion": "2025-11-15T10:30:00"
+#   }
+# ]
+
+### Respuesta esperada para /api/reports/proveedores:
+# [
+#   {
+#     "proveedorId": 1,
+#     "ruc": "20123456789",
+#     "razonComercial": "Farmacia ABC S.A.C.",
+#     "correo": "contacto@farmaciabc.com",
+#     "direccion": "Av. Principal 123",
+#     "totalProductos": 50,
+#     "productos": [
+#       {
+#         "productoId": 1,
+#         "nombre": "Paracetamol 500mg",
+#         "codigoBarras": "123456789",
+#         "categoria": "Analgésico",
+#         "laboratorio": "Lab ABC",
+#         "cantidadGeneral": 500
+#       }
+#     ]
+#   }
+# ]

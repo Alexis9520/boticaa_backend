@@ -600,4 +600,9 @@ public class ProductoService {
 
         return paged;
     }
+
+    // Buscar productos por proveedor
+    public List<Producto> buscarPorProveedorId(Long proveedorId) {
+        return productoRepository.findByProveedorIdAndActivoTrue(proveedorId);
+    }
 }

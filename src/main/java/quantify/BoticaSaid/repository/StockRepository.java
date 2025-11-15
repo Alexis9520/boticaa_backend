@@ -5,10 +5,12 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
+import org.springframework.data.repository.query.Param;
 import quantify.BoticaSaid.model.Stock;
 import quantify.BoticaSaid.model.Producto;
 import org.springframework.data.jpa.repository.Query;
 
+import java.time.LocalDateTime;
 import java.util.List;
 
 public interface StockRepository extends JpaRepository<Stock, Integer>, JpaSpecificationExecutor<Stock> {
@@ -23,4 +25,8 @@ public interface StockRepository extends JpaRepository<Stock, Integer>, JpaSpeci
     @Override
     @EntityGraph(attributePaths = { "producto" })
     Page<Stock> findAll(org.springframework.data.jpa.domain.Specification<Stock> spec, Pageable pageable);
+
+    // Find stocks created within a date range with product info
+    @Query("SELECT s FROM Stock s JOIN FETCH s.producto p WHERE s.fechaCreacion BETWEEN :fechaInicio AND :fechaFin ORDER BY s.fechaCreacion DESC")
+    List<Stock> findByFechaCreacionBetweenWithProducto(@Param("fechaInicio") LocalDateTime fechaInicio, @Param("fechaFin") LocalDateTime fechaFin);
 }

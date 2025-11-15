@@ -10,18 +10,28 @@ import quantify.BoticaSaid.dto.reports.ReportDtos.PaymentMixDto;
 import quantify.BoticaSaid.dto.reports.ReportDtos.SalesByDayDto;
 import quantify.BoticaSaid.dto.reports.ReportDtos.SalesSummaryDto;
 import quantify.BoticaSaid.dto.reports.ReportDtos.TopProductDto;
+import quantify.BoticaSaid.dto.reports.LoteReportDTO;
+import quantify.BoticaSaid.dto.reports.ProveedorReportDTO;
+import quantify.BoticaSaid.repository.StockRepository;
+import quantify.BoticaSaid.repository.ProveedorRepository;
+import quantify.BoticaSaid.repository.ProductoRepository;
+import quantify.BoticaSaid.model.Proveedor;
+import quantify.BoticaSaid.model.Producto;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Service;
+import org.springframework.beans.factory.annotation.Autowired;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.sql.*;
 import java.time.*;
+import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 @Service
 public class ReportsService {
@@ -29,6 +39,15 @@ public class ReportsService {
     private static final Logger log = LoggerFactory.getLogger(ReportsService.class);
 
     private final JdbcTemplate jdbc;
+
+    @Autowired
+    private StockRepository stockRepository;
+
+    @Autowired
+    private ProveedorRepository proveedorRepository;
+
+    @Autowired
+    private ProductoRepository productoRepository;
 
     public ReportsService(JdbcTemplate jdbc) {
         this.jdbc = jdbc;
@@ -626,5 +645,114 @@ public class ReportsService {
         if (o instanceof Number n) return n.intValue() != 0;
         if (o instanceof byte[] arr) return arr.length > 0 && arr[0] != 0;
         return Boolean.valueOf(o.toString());
+    }
+
+    // ========= Nuevos Reportes =========
+
+    /**
+     * Obtener reporte de lotes agregados por rango de fechas
+     */
+    public List<LoteReportDTO> getLotesReportByDateRange(String fechaInicio, String fechaFin) {
+        LocalDateTime inicio = parseIso(fechaInicio, false);
+        LocalDateTime fin = parseIso(fechaFin, true);
+        
+        if (inicio == null || fin == null) {
+            throw new IllegalArgumentException("Fechas inválidas");
+        }
+
+        var stocks = stockRepository.findByFechaCreacionBetweenWithProducto(inicio, fin);
+        
+        return stocks.stream()
+                .map(stock -> new LoteReportDTO(
+                        stock.getProducto().getId(),
+                        stock.getProducto().getNombre(),
+                        stock.getProducto().getCodigoBarras(),
+                        stock.getId(),
+                        stock.getCodigoStock(),
+                        stock.getCantidadUnidades(),
+                        stock.getFechaVencimiento(),
+                        stock.getPrecioCompra(),
+                        stock.getFechaCreacion()
+                ))
+                .collect(Collectors.toList());
+    }
+
+    /**
+     * Obtener reporte de proveedores con su lista de productos
+     */
+    public List<ProveedorReportDTO> getProveedoresReport() {
+        List<Proveedor> proveedores = proveedorRepository.findByActivoTrue();
+        
+        return proveedores.stream()
+                .map(proveedor -> {
+                    List<Producto> productos = productoRepository.findByProveedorIdAndActivoTrue(proveedor.getId());
+                    
+                    List<ProveedorReportDTO.ProductoProveedorDTO> productosDTO = productos.stream()
+                            .map(p -> new ProveedorReportDTO.ProductoProveedorDTO(
+                                    p.getId(),
+                                    p.getNombre(),
+                                    p.getCodigoBarras(),
+                                    p.getCategoria(),
+                                    p.getLaboratorio(),
+                                    p.getCantidadGeneral()
+                            ))
+                            .collect(Collectors.toList());
+                    
+                    return new ProveedorReportDTO(
+                            proveedor.getId(),
+                            proveedor.getRuc(),
+                            proveedor.getRazonComercial(),
+                            proveedor.getCorreo(),
+                            proveedor.getDireccion(),
+                            productos.size(),
+                            productosDTO
+                    );
+                })
+                .collect(Collectors.toList());
+    }
+
+    /**
+     * Obtener productos creados en un rango de fechas para exportar
+     */
+    public List<Map<String, Object>> getProductosByDateRange(String fechaInicio, String fechaFin) {
+        LocalDateTime inicio = parseIso(fechaInicio, false);
+        LocalDateTime fin = parseIso(fechaFin, true);
+        
+        if (inicio == null || fin == null) {
+            throw new IllegalArgumentException("Fechas inválidas");
+        }
+
+        // Convert LocalDateTime to java.util.Date for the repository query
+        java.util.Date inicioDate = java.util.Date.from(inicio.atZone(ZoneId.systemDefault()).toInstant());
+        java.util.Date finDate = java.util.Date.from(fin.atZone(ZoneId.systemDefault()).toInstant());
+        
+        List<Producto> productos = productoRepository.findByFechaCreacionBetween(inicioDate, finDate);
+        
+        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
+        
+        return productos.stream()
+                .map(p -> {
+                    Map<String, Object> map = new java.util.HashMap<>();
+                    map.put("id", p.getId());
+                    map.put("codigo_barras", p.getCodigoBarras());
+                    map.put("nombre", p.getNombre());
+                    map.put("categoria", p.getCategoria());
+                    map.put("laboratorio", p.getLaboratorio());
+                    map.put("concentracion", p.getConcentracion());
+                    map.put("presentacion", p.getPresentacion());
+                    map.put("cantidad_general", p.getCantidadGeneral());
+                    map.put("precio_venta_und", p.getPrecioVentaUnd());
+                    if (p.getFechaCreacion() != null) {
+                        map.put("fecha_creacion", 
+                            p.getFechaCreacion().toInstant()
+                                .atZone(ZoneId.systemDefault())
+                                .toLocalDateTime()
+                                .format(formatter));
+                    } else {
+                        map.put("fecha_creacion", "");
+                    }
+                    return map;
+                })
+                .collect(Collectors.toList());
     }
 }
