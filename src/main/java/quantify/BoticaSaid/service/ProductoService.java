@@ -76,6 +76,18 @@ public class ProductoService {
                 existente.setTipoMedicamento(request.getTipoMedicamento());
                 existente.setPresentacion(request.getPresentacion());
 
+                // Manejar proveedor
+                if (request.getProveedorId() != null) {
+                    Optional<Proveedor> proveedorOpt = proveedorRepository.findById(request.getProveedorId());
+                    if (proveedorOpt.isPresent() && proveedorOpt.get().isActivo()) {
+                        existente.setProveedor(proveedorOpt.get());
+                    } else {
+                        existente.setProveedor(null);
+                    }
+                } else {
+                    existente.setProveedor(null);
+                }
+
                 // Limpiar stocks anteriores (orphanRemoval activo)
                 existente.getStocks().clear();
 
@@ -126,6 +138,14 @@ public class ProductoService {
         producto.setPrincipioActivo(request.getPrincipioActivo());
         producto.setTipoMedicamento(request.getTipoMedicamento());
         producto.setPresentacion(request.getPresentacion());
+
+        // Manejar proveedor
+        if (request.getProveedorId() != null) {
+            Optional<Proveedor> proveedorOpt = proveedorRepository.findById(request.getProveedorId());
+            if (proveedorOpt.isPresent() && proveedorOpt.get().isActivo()) {
+                producto.setProveedor(proveedorOpt.get());
+            }
+        }
 
         int acumuladorPadre = 0;
         if (request.getStocks() != null && !request.getStocks().isEmpty()) {
