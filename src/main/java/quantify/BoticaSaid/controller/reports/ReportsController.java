@@ -22,6 +22,7 @@ import org.apache.poi.xssf.streaming.SXSSFWorkbook;
 import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.*;
 
+import java.math.BigDecimal;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import java.util.List;
@@ -408,6 +409,94 @@ public class ReportsController {
 
             ExcelStyleUtil.setupSheetCommon(sheet, 1, lastCol);
             ExcelStyleUtil.autosizeColumns(sheet, headers.length, new int[]{12, 26, 12, 12, 14, 18});
+
+            wb.write(res.getOutputStream());
+            wb.dispose();
+        }
+    }
+
+    // ===== Reportes de Lotes agregados por rango de fechas =====
+    @GetMapping("/lotes")
+    public org.springframework.http.ResponseEntity<?> reporteLotes(
+            @RequestParam String fechaInicio,
+            @RequestParam String fechaFin) {
+        try {
+            var lotes = svc.getLotesReportByDateRange(fechaInicio, fechaFin);
+            return org.springframework.http.ResponseEntity.ok(lotes);
+        } catch (Exception e) {
+            return org.springframework.http.ResponseEntity.badRequest()
+                    .body(java.util.Map.of("error", e.getMessage()));
+        }
+    }
+
+    // ===== Reporte de Proveedores con su lista de productos =====
+    @GetMapping("/proveedores")
+    public org.springframework.http.ResponseEntity<?> reporteProveedores() {
+        try {
+            var proveedores = svc.getProveedoresReport();
+            return org.springframework.http.ResponseEntity.ok(proveedores);
+        } catch (Exception e) {
+            return org.springframework.http.ResponseEntity.badRequest()
+                    .body(java.util.Map.of("error", e.getMessage()));
+        }
+    }
+
+    // ===== Exportar productos por rango de fechas =====
+    @GetMapping(value = "/productos/export", produces = MediaType.APPLICATION_OCTET_STREAM_VALUE)
+    public void exportProductos(
+            @RequestParam String fechaInicio,
+            @RequestParam String fechaFin,
+            HttpServletResponse res) throws Exception {
+        
+        var productos = svc.getProductosByDateRange(fechaInicio, fechaFin);
+        setDownloadHeaders(res, "productos_" + fechaInicio + "_" + fechaFin + ".xlsx");
+
+        try (SXSSFWorkbook wb = new SXSSFWorkbook(200)) {
+            var styles = ExcelStyleUtil.createStyles(wb);
+            var sheet = wb.createSheet("Productos");
+            ExcelStyleUtil.trackAutosizeIfSXSSF(sheet);
+
+            String[] headers = {
+                    "ID", "Código", "Nombre", "Categoría", "Laboratorio", 
+                    "Concentración", "Presentación", "Stock", "Precio UND", 
+                    "Fecha Creación"
+            };
+            int lastCol = headers.length - 1;
+
+            ExcelStyleUtil.mergeTitle(sheet, 0, lastCol, styles.title, 
+                    "Productos creados del " + fechaInicio + " al " + fechaFin);
+            Row h = sheet.createRow(1);
+            for (int i = 0; i < headers.length; i++) {
+                Cell c = h.createCell(i);
+                c.setCellValue(headers[i]);
+                c.setCellStyle(styles.header);
+            }
+            ExcelStyleUtil.setRowHeights(sheet.getRow(0), h);
+
+            int r = 2;
+            for (var p : productos) {
+                Row rr = sheet.createRow(r++);
+                int c = 0;
+                Cell cc;
+                Object idObj = p.get("id");
+                cc = rr.createCell(c++); cc.setCellValue(idObj instanceof Number ? ((Number)idObj).doubleValue() : 0); cc.setCellStyle(styles.integer);
+                cc = rr.createCell(c++); cc.setCellValue(nvl((String)p.get("codigo_barras")));   cc.setCellStyle(styles.textCenter);
+                cc = rr.createCell(c++); cc.setCellValue(nvl((String)p.get("nombre")));          cc.setCellStyle(styles.text);
+                cc = rr.createCell(c++); cc.setCellValue(nvl((String)p.get("categoria")));       cc.setCellStyle(styles.text);
+                cc = rr.createCell(c++); cc.setCellValue(nvl((String)p.get("laboratorio")));     cc.setCellStyle(styles.text);
+                cc = rr.createCell(c++); cc.setCellValue(nvl((String)p.get("concentracion")));   cc.setCellStyle(styles.text);
+                cc = rr.createCell(c++); cc.setCellValue(nvl((String)p.get("presentacion")));    cc.setCellStyle(styles.text);
+                Object cantObj = p.get("cantidad_general");
+                cc = rr.createCell(c++); cc.setCellValue(cantObj instanceof Number ? ((Number)cantObj).doubleValue() : 0); cc.setCellStyle(styles.integer);
+                cc = rr.createCell(c++); cc.setCellValue(nbd((BigDecimal)p.get("precio_venta_und"))); cc.setCellStyle(styles.currency);
+                cc = rr.createCell(c++); cc.setCellValue(nvl((String)p.get("fecha_creacion")));  cc.setCellStyle(styles.textCenter);
+
+                ExcelStyleUtil.fillRowStyles(rr, (r % 2 == 0) ? styles.zebra1 : styles.zebra2, headers.length);
+            }
+
+            ExcelStyleUtil.setupSheetCommon(sheet, 1, lastCol);
+            ExcelStyleUtil.autosizeColumns(sheet, headers.length, 
+                    new int[]{8, 12, 28, 16, 18, 16, 16, 12, 12, 18});
 
             wb.write(res.getOutputStream());
             wb.dispose();

@@ -196,4 +196,17 @@ public class ProductoController {
             return ResponseEntity.notFound().build();
         }
     }
+
+    /**
+     * Listar productos por proveedor
+     * GET /productos/proveedor/{proveedorId}
+     */
+    @GetMapping("/proveedor/{proveedorId}")
+    public ResponseEntity<List<ProductoResponse>> listarProductosPorProveedor(@PathVariable Long proveedorId) {
+        List<Producto> productos = productoService.buscarPorProveedorId(proveedorId);
+        List<ProductoResponse> productosRes = productos.stream()
+                .map(productoService::toProductoResponse)
+                .toList();
+        return ResponseEntity.ok(productosRes);
+    }
 }
