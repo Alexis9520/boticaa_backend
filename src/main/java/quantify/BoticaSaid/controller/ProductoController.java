@@ -169,6 +169,18 @@ public class ProductoController {
                 : ResponseEntity.badRequest().body("Producto no encontrado.");
     }
 
+    /**
+     * Agregar lotes de stock a un producto existente sin modificar datos del producto
+     * POST /productos/agregar-lote
+     */
+    @PostMapping("/agregar-lote")
+    public ResponseEntity<?> agregarLote(@RequestBody quantify.BoticaSaid.dto.stock.AgregarLoteRequest request) {
+        boolean exito = productoService.agregarLotes(request);
+        return exito
+                ? ResponseEntity.ok("Lote(s) agregado(s) correctamente.")
+                : ResponseEntity.badRequest().body("Producto no encontrado o lotes vacíos.");
+    }
+
     // ===== DELETE OPERATIONS =====
 
     /**

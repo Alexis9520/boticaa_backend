@@ -67,6 +67,10 @@ public class Producto {
     @OneToMany(mappedBy = "producto", cascade = CascadeType.ALL, fetch = FetchType.LAZY, orphanRemoval = true)
     private List<Stock> stocks = new ArrayList<>();
 
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "proveedor_id")
+    private Proveedor proveedor;
+
     @Column(name = "Cantidad_unidades_blister")
     private Integer CantidadUnidadesBlister;
 
@@ -227,5 +231,13 @@ public class Producto {
 
     public void setPrecioVentaBlister(BigDecimal precioVentaBlister) {
         this.precioVentaBlister = precioVentaBlister;
+    }
+
+    public Proveedor getProveedor() {
+        return proveedor;
+    }
+
+    public void setProveedor(Proveedor proveedor) {
+        this.proveedor = proveedor;
     }
 }

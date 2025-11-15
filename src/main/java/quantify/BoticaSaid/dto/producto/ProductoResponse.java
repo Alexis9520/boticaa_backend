@@ -22,6 +22,8 @@ public class ProductoResponse {
     private String principioActivo;
     private String tipoMedicamento;
     private String presentacion;
+    private Long proveedorId;
+    private String proveedorNombre;
     private List<StockLoteDTO> stocks;
 
     // Getters y setters
@@ -147,4 +149,20 @@ public class ProductoResponse {
     }
     public String getPresentacion() { return presentacion; }
     public void setPresentacion(String presentacion) { this.presentacion = presentacion; }
+
+    public Long getProveedorId() {
+        return proveedorId;
+    }
+
+    public void setProveedorId(Long proveedorId) {
+        this.proveedorId = proveedorId;
+    }
+
+    public String getProveedorNombre() {
+        return proveedorNombre;
+    }
+
+    public void setProveedorNombre(String proveedorNombre) {
+        this.proveedorNombre = proveedorNombre;
+    }
 }
