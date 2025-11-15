@@ -34,6 +34,8 @@ public class ProductoRequest {
     private String tipoMedicamento;
     private String presentacion;
 
+    private Long proveedorId;
+
     private List<StockRequest> stocks;
 
     // Getters y setters
@@ -164,5 +166,13 @@ public class ProductoRequest {
 
     public void setStocks(List<StockRequest> stocks) {
         this.stocks = stocks;
+    }
+
+    public Long getProveedorId() {
+        return proveedorId;
+    }
+
+    public void setProveedorId(Long proveedorId) {
+        this.proveedorId = proveedorId;
     }
 }
