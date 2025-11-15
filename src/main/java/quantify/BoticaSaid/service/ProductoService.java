@@ -498,7 +498,9 @@ public class ProductoService {
         // Agregar información del proveedor
         if (producto.getProveedor() != null) {
             resp.setProveedorId(producto.getProveedor().getId());
-            resp.setProveedorNombre(producto.getProveedor().getNombre());
+            resp.setProveedorNombre(producto.getProveedor().getRazonComercial() != null 
+                ? producto.getProveedor().getRazonComercial() 
+                : producto.getProveedor().getRuc());
         }
 
         if (producto.getStocks() != null && !producto.getStocks().isEmpty()) {

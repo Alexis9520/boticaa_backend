@@ -43,7 +43,8 @@ class ProductoProveedorIntegrationTest {
     void testCrearProductoConProveedor() {
         // Crear proveedor
         ProveedorRequest proveedorReq = new ProveedorRequest();
-        proveedorReq.setNombre("Distribuidora ABC");
+        proveedorReq.setRuc("20123456789");
+        proveedorReq.setRazonComercial("Distribuidora ABC");
         Proveedor proveedor = proveedorService.crearProveedor(proveedorReq);
 
         // Crear producto con proveedor
@@ -57,7 +58,7 @@ class ProductoProveedorIntegrationTest {
         assertNotNull(producto);
         assertNotNull(producto.getProveedor());
         assertEquals(proveedor.getId(), producto.getProveedor().getId());
-        assertEquals("Distribuidora ABC", producto.getProveedor().getNombre());
+        assertEquals("Distribuidora ABC", producto.getProveedor().getRazonComercial());
     }
 
     @Test
@@ -77,7 +78,8 @@ class ProductoProveedorIntegrationTest {
     void testActualizarProductoConProveedor() {
         // Crear proveedor
         ProveedorRequest proveedorReq = new ProveedorRequest();
-        proveedorReq.setNombre("Distribuidora XYZ");
+        proveedorReq.setRuc("20987654321");
+        proveedorReq.setRazonComercial("Distribuidora XYZ");
         Proveedor proveedor = proveedorService.crearProveedor(proveedorReq);
 
         // Crear producto sin proveedor
@@ -101,7 +103,8 @@ class ProductoProveedorIntegrationTest {
     void testActualizarProductoRemoverProveedor() {
         // Crear proveedor
         ProveedorRequest proveedorReq = new ProveedorRequest();
-        proveedorReq.setNombre("Distribuidora ABC");
+        proveedorReq.setRuc("20111222333");
+        proveedorReq.setRazonComercial("Distribuidora ABC");
         Proveedor proveedor = proveedorService.crearProveedor(proveedorReq);
 
         // Crear producto con proveedor
@@ -125,7 +128,8 @@ class ProductoProveedorIntegrationTest {
     void testProductoResponseIncluyeProveedor() {
         // Crear proveedor
         ProveedorRequest proveedorReq = new ProveedorRequest();
-        proveedorReq.setNombre("Farmaceutica DEF");
+        proveedorReq.setRuc("20444555666");
+        proveedorReq.setRazonComercial("Farmaceutica DEF");
         Proveedor proveedor = proveedorService.crearProveedor(proveedorReq);
 
         // Crear producto con proveedor
@@ -178,7 +182,8 @@ class ProductoProveedorIntegrationTest {
     void testCrearProductoConProveedorInactivo() {
         // Crear y desactivar proveedor
         ProveedorRequest proveedorReq = new ProveedorRequest();
-        proveedorReq.setNombre("Proveedor Inactivo");
+        proveedorReq.setRuc("20777888999");
+        proveedorReq.setRazonComercial("Proveedor Inactivo");
         Proveedor proveedor = proveedorService.crearProveedor(proveedorReq);
         proveedorService.eliminarPorId(proveedor.getId());
 

@@ -23,15 +23,16 @@ public class ProveedorService {
      */
     @Transactional
     public Proveedor crearProveedor(ProveedorRequest request) {
-        if (request.getNombre() == null || request.getNombre().trim().isEmpty()) {
-            throw new IllegalArgumentException("El nombre del proveedor es obligatorio.");
+        if (request.getRuc() == null || request.getRuc().trim().isEmpty()) {
+            throw new IllegalArgumentException("El RUC del proveedor es obligatorio.");
         }
 
         Proveedor proveedor = new Proveedor();
-        proveedor.setNombre(request.getNombre());
-        proveedor.setContacto(request.getContacto());
-        proveedor.setTelefono(request.getTelefono());
-        proveedor.setEmail(request.getEmail());
+        proveedor.setRuc(request.getRuc());
+        proveedor.setRazonComercial(request.getRazonComercial());
+        proveedor.setNumero1(request.getNumero1());
+        proveedor.setNumero2(request.getNumero2());
+        proveedor.setCorreo(request.getCorreo());
         proveedor.setDireccion(request.getDireccion());
         proveedor.setActivo(true);
 
@@ -54,13 +55,13 @@ public class ProveedorService {
     }
 
     /**
-     * Buscar proveedores por nombre
+     * Buscar proveedores por RUC o razón comercial
      */
-    public List<Proveedor> buscarPorNombre(String nombre) {
-        if (nombre == null || nombre.trim().isEmpty()) {
+    public List<Proveedor> buscarPorRucORazonComercial(String query) {
+        if (query == null || query.trim().isEmpty()) {
             return listarTodos();
         }
-        return proveedorRepository.findByNombreContainingIgnoreCaseAndActivoTrue(nombre);
+        return proveedorRepository.findByRucContainingIgnoreCaseOrRazonComercialContainingIgnoreCaseAndActivoTrue(query, query);
     }
 
     /**
@@ -75,10 +76,11 @@ public class ProveedorService {
         }
 
         Proveedor proveedor = proveedorOpt.get();
-        proveedor.setNombre(request.getNombre());
-        proveedor.setContacto(request.getContacto());
-        proveedor.setTelefono(request.getTelefono());
-        proveedor.setEmail(request.getEmail());
+        proveedor.setRuc(request.getRuc());
+        proveedor.setRazonComercial(request.getRazonComercial());
+        proveedor.setNumero1(request.getNumero1());
+        proveedor.setNumero2(request.getNumero2());
+        proveedor.setCorreo(request.getCorreo());
         proveedor.setDireccion(request.getDireccion());
 
         return proveedorRepository.save(proveedor);
@@ -111,10 +113,11 @@ public class ProveedorService {
 
         ProveedorResponse response = new ProveedorResponse();
         response.setId(proveedor.getId());
-        response.setNombre(proveedor.getNombre());
-        response.setContacto(proveedor.getContacto());
-        response.setTelefono(proveedor.getTelefono());
-        response.setEmail(proveedor.getEmail());
+        response.setRuc(proveedor.getRuc());
+        response.setRazonComercial(proveedor.getRazonComercial());
+        response.setNumero1(proveedor.getNumero1());
+        response.setNumero2(proveedor.getNumero2());
+        response.setCorreo(proveedor.getCorreo());
         response.setDireccion(proveedor.getDireccion());
         response.setFechaCreacion(proveedor.getFechaCreacion());
         response.setFechaActualizacion(proveedor.getFechaActualizacion());

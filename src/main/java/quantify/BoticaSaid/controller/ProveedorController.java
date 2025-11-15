@@ -50,15 +50,15 @@ public class ProveedorController {
 
     /**
      * Listar todos los proveedores activos con búsqueda opcional
-     * GET /proveedores?nombre={nombre}
+     * GET /proveedores?q={query}
      */
     @GetMapping
     public ResponseEntity<List<ProveedorResponse>> listarProveedores(
-            @RequestParam(required = false) String nombre) {
+            @RequestParam(required = false) String q) {
         List<Proveedor> proveedores;
         
-        if (nombre != null && !nombre.trim().isEmpty()) {
-            proveedores = proveedorService.buscarPorNombre(nombre);
+        if (q != null && !q.trim().isEmpty()) {
+            proveedores = proveedorService.buscarPorRucORazonComercial(q);
         } else {
             proveedores = proveedorService.listarTodos();
         }
