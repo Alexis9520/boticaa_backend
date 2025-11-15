@@ -20,6 +20,8 @@ import java.util.*;
 import java.util.stream.Collectors;
 
 import quantify.BoticaSaid.repository.StockRepository;
+import quantify.BoticaSaid.repository.ProveedorRepository;
+import quantify.BoticaSaid.model.Proveedor;
 
 @Service
 public class ProductoService {
@@ -29,6 +31,9 @@ public class ProductoService {
 
     @Autowired
     private StockRepository stockRepository;
+
+    @Autowired
+    private ProveedorRepository proveedorRepository;
 
     /**
      * Crear producto con stock.
@@ -70,6 +75,18 @@ public class ProductoService {
                 existente.setPrincipioActivo(request.getPrincipioActivo());
                 existente.setTipoMedicamento(request.getTipoMedicamento());
                 existente.setPresentacion(request.getPresentacion());
+
+                // Manejar proveedor
+                if (request.getProveedorId() != null) {
+                    Optional<Proveedor> proveedorOpt = proveedorRepository.findById(request.getProveedorId());
+                    if (proveedorOpt.isPresent() && proveedorOpt.get().isActivo()) {
+                        existente.setProveedor(proveedorOpt.get());
+                    } else {
+                        existente.setProveedor(null);
+                    }
+                } else {
+                    existente.setProveedor(null);
+                }
 
                 // Limpiar stocks anteriores (orphanRemoval activo)
                 existente.getStocks().clear();
@@ -121,6 +138,14 @@ public class ProductoService {
         producto.setPrincipioActivo(request.getPrincipioActivo());
         producto.setTipoMedicamento(request.getTipoMedicamento());
         producto.setPresentacion(request.getPresentacion());
+
+        // Manejar proveedor
+        if (request.getProveedorId() != null) {
+            Optional<Proveedor> proveedorOpt = proveedorRepository.findById(request.getProveedorId());
+            if (proveedorOpt.isPresent() && proveedorOpt.get().isActivo()) {
+                producto.setProveedor(proveedorOpt.get());
+            }
+        }
 
         int acumuladorPadre = 0;
         if (request.getStocks() != null && !request.getStocks().isEmpty()) {
@@ -208,6 +233,54 @@ public class ProductoService {
         int actual = producto.getCantidadGeneral() != null ? producto.getCantidadGeneral() : 0;
         int agregar = request.getCantidadUnidades(); // int
         producto.setCantidadGeneral(actual + agregar);
+
+        productoRepository.save(producto);
+        return true;
+    }
+
+    /**
+     * Agregar uno o múltiples lotes de stock a un producto existente
+     * sin modificar los datos del producto
+     */
+    @Transactional
+    public boolean agregarLotes(quantify.BoticaSaid.dto.stock.AgregarLoteRequest request) {
+        Producto producto = null;
+
+        // Buscar por ID
+        if (request.getProductoId() != null) {
+            Optional<Producto> prodOpt = productoRepository.findByIdWithStocks(request.getProductoId());
+            producto = prodOpt.orElseGet(() -> productoRepository.findById(request.getProductoId()).orElse(null));
+        }
+
+        // Buscar por código de barras si no se encontró por ID
+        if (producto == null && request.getCodigoBarras() != null && !request.getCodigoBarras().isBlank()) {
+            Optional<Producto> prodOpt = productoRepository.findByCodigoBarrasWithStocks(request.getCodigoBarras());
+            producto = prodOpt.orElseGet(() -> productoRepository.findByCodigoBarras(request.getCodigoBarras()));
+        }
+
+        if (producto == null || !producto.isActivo()) {
+            return false;
+        }
+
+        if (request.getLotes() == null || request.getLotes().isEmpty()) {
+            return false;
+        }
+
+        int totalUnidades = 0;
+        for (var loteItem : request.getLotes()) {
+            Stock nuevoStock = new Stock();
+            nuevoStock.setCodigoStock(loteItem.getCodigoStock());
+            nuevoStock.setCantidadUnidades(loteItem.getCantidadUnidades());
+            nuevoStock.setFechaVencimiento(loteItem.getFechaVencimiento());
+            nuevoStock.setPrecioCompra(loteItem.getPrecioCompra());
+            nuevoStock.setProducto(producto);
+
+            producto.getStocks().add(nuevoStock);
+            totalUnidades += loteItem.getCantidadUnidades();
+        }
+
+        int actual = producto.getCantidadGeneral() != null ? producto.getCantidadGeneral() : 0;
+        producto.setCantidadGeneral(actual + totalUnidades);
 
         productoRepository.save(producto);
         return true;
@@ -334,6 +407,18 @@ public class ProductoService {
         producto.setTipoMedicamento(request.getTipoMedicamento());
         producto.setPresentacion(request.getPresentacion());
 
+        // Manejar proveedor
+        if (request.getProveedorId() != null) {
+            Optional<Proveedor> proveedorOpt = proveedorRepository.findById(request.getProveedorId());
+            if (proveedorOpt.isPresent() && proveedorOpt.get().isActivo()) {
+                producto.setProveedor(proveedorOpt.get());
+            } else {
+                producto.setProveedor(null);
+            }
+        } else {
+            producto.setProveedor(null);
+        }
+
         if (replaceStocks) {
             producto.getStocks().clear();
             int acumulador = 0;
@@ -409,6 +494,14 @@ public class ProductoService {
         resp.setPrincipioActivo(producto.getPrincipioActivo());
         resp.setTipoMedicamento(producto.getTipoMedicamento());
         resp.setPresentacion(producto.getPresentacion());
+
+        // Agregar información del proveedor
+        if (producto.getProveedor() != null) {
+            resp.setProveedorId(producto.getProveedor().getId());
+            resp.setProveedorNombre(producto.getProveedor().getRazonComercial() != null 
+                ? producto.getProveedor().getRazonComercial() 
+                : producto.getProveedor().getRuc());
+        }
 
         if (producto.getStocks() != null && !producto.getStocks().isEmpty()) {
             resp.setStocks(
