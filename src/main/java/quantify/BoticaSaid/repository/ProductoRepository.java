@@ -75,4 +75,8 @@ public interface ProductoRepository extends JpaRepository<Producto, Long> {
     @Query("SELECT p FROM Producto p WHERE p.fechaCreacion BETWEEN :fechaInicio AND :fechaFin AND p.activo = true")
     List<Producto> findByFechaCreacionBetween(@Param("fechaInicio") java.util.Date fechaInicio, @Param("fechaFin") java.util.Date fechaFin);
 
+    // Find products by category with stocks
+    @Query("SELECT DISTINCT p FROM Producto p LEFT JOIN FETCH p.stocks WHERE LOWER(p.categoria) = LOWER(:categoria) AND p.activo = true")
+    List<Producto> findByCategoriaWithStocks(@Param("categoria") String categoria);
+
 }

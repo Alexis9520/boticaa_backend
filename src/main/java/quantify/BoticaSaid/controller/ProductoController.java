@@ -209,4 +209,17 @@ public class ProductoController {
                 .toList();
         return ResponseEntity.ok(productosRes);
     }
+
+    /**
+     * Obtener productos por categoría con stocks
+     * GET /productos/categoria/{categoria}
+     */
+    @GetMapping("/categoria/{categoria}")
+    public ResponseEntity<List<ProductoResponse>> obtenerProductosPorCategoria(@PathVariable String categoria) {
+        List<Producto> productos = productoService.buscarPorCategoria(categoria);
+        List<ProductoResponse> productosRes = productos.stream()
+                .map(productoService::toProductoResponse)
+                .toList();
+        return ResponseEntity.ok(productosRes);
+    }
 }
