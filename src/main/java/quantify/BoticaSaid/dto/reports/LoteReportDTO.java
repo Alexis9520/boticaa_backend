@@ -9,9 +9,12 @@ public class LoteReportDTO {
     private Long productoId;
     private String nombreProducto;
     private String codigoBarras;
+    private String concentracion;
+    private String presentacion;
     private Integer stockId;
     private String codigoStock;
     private Integer cantidadUnidades;
+    private Integer cantidadInicial;
     private LocalDate fechaVencimiento;
     private BigDecimal precioCompra;
     private LocalDateTime fechaCreacion;
@@ -19,14 +22,19 @@ public class LoteReportDTO {
     public LoteReportDTO() {}
     
     public LoteReportDTO(Long productoId, String nombreProducto, String codigoBarras, 
+                         String concentracion, String presentacion,
                          Integer stockId, String codigoStock, Integer cantidadUnidades, 
+                         Integer cantidadInicial,
                          LocalDate fechaVencimiento, BigDecimal precioCompra, LocalDateTime fechaCreacion) {
         this.productoId = productoId;
         this.nombreProducto = nombreProducto;
         this.codigoBarras = codigoBarras;
+        this.concentracion = concentracion;
+        this.presentacion = presentacion;
         this.stockId = stockId;
         this.codigoStock = codigoStock;
         this.cantidadUnidades = cantidadUnidades;
+        this.cantidadInicial = cantidadInicial;
         this.fechaVencimiento = fechaVencimiento;
         this.precioCompra = precioCompra;
         this.fechaCreacion = fechaCreacion;
@@ -57,6 +65,22 @@ public class LoteReportDTO {
         this.codigoBarras = codigoBarras;
     }
 
+    public String getConcentracion() {
+        return concentracion;
+    }
+
+    public void setConcentracion(String concentracion) {
+        this.concentracion = concentracion;
+    }
+
+    public String getPresentacion() {
+        return presentacion;
+    }
+
+    public void setPresentacion(String presentacion) {
+        this.presentacion = presentacion;
+    }
+
     public Integer getStockId() {
         return stockId;
     }
@@ -79,6 +103,14 @@ public class LoteReportDTO {
 
     public void setCantidadUnidades(Integer cantidadUnidades) {
         this.cantidadUnidades = cantidadUnidades;
+    }
+
+    public Integer getCantidadInicial() {
+        return cantidadInicial;
+    }
+
+    public void setCantidadInicial(Integer cantidadInicial) {
+        this.cantidadInicial = cantidadInicial;
     }
 
     public LocalDate getFechaVencimiento() {

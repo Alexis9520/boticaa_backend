@@ -653,8 +653,15 @@ public class ReportsService {
      * Obtener reporte de lotes agregados por rango de fechas
      */
     public List<LoteReportDTO> getLotesReportByDateRange(String fechaInicio, String fechaFin) {
-        LocalDateTime inicio = parseIso(fechaInicio, false);
-        LocalDateTime fin = parseIso(fechaFin, true);
+        LocalDateTime inicio;
+        LocalDateTime fin;
+        
+        try {
+            inicio = parseIso(fechaInicio, false);
+            fin = parseIso(fechaFin, true);
+        } catch (Exception e) {
+            throw new IllegalArgumentException("Fechas inválidas: " + e.getMessage());
+        }
         
         if (inicio == null || fin == null) {
             throw new IllegalArgumentException("Fechas inválidas");
@@ -667,9 +674,12 @@ public class ReportsService {
                         stock.getProducto().getId(),
                         stock.getProducto().getNombre(),
                         stock.getProducto().getCodigoBarras(),
+                        stock.getProducto().getConcentracion(),
+                        stock.getProducto().getPresentacion(),
                         stock.getId(),
                         stock.getCodigoStock(),
                         stock.getCantidadUnidades(),
+                        stock.getCantidadInicial(),
                         stock.getFechaVencimiento(),
                         stock.getPrecioCompra(),
                         stock.getFechaCreacion()

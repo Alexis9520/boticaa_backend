@@ -24,6 +24,9 @@ public class Stock {
     @Column(name = "cantidad_unidades")
     private int cantidadUnidades;
 
+    @Column(name = "cantidad_inicial")
+    private Integer cantidadInicial;
+
     @Column(name = "fecha_vencimiento")
     @JsonFormat(pattern = "yyyy-MM-dd")
     private LocalDate fechaVencimiento; // LocalDate en lugar de Date
@@ -79,6 +82,14 @@ public class Stock {
 
     public void setCantidadUnidades(int cantidadUnidades) {
         this.cantidadUnidades = cantidadUnidades;
+    }
+
+    public Integer getCantidadInicial() {
+        return cantidadInicial;
+    }
+
+    public void setCantidadInicial(Integer cantidadInicial) {
+        this.cantidadInicial = cantidadInicial;
     }
 
     public LocalDate getFechaVencimiento() {

@@ -415,17 +415,75 @@ public class ReportsController {
         }
     }
 
-    // ===== Reportes de Lotes agregados por rango de fechas =====
-    @GetMapping("/lotes")
-    public org.springframework.http.ResponseEntity<?> reporteLotes(
+    // ===== Reportes de Lotes agregados por rango de fechas (Excel) =====
+    @GetMapping(value = "/lotes", produces = MediaType.APPLICATION_OCTET_STREAM_VALUE)
+    public void reporteLotesExcel(
             @RequestParam String fechaInicio,
-            @RequestParam String fechaFin) {
+            @RequestParam String fechaFin,
+            HttpServletResponse res) throws Exception {
+        
         try {
             var lotes = svc.getLotesReportByDateRange(fechaInicio, fechaFin);
-            return org.springframework.http.ResponseEntity.ok(lotes);
-        } catch (Exception e) {
-            return org.springframework.http.ResponseEntity.badRequest()
-                    .body(java.util.Map.of("error", e.getMessage()));
+            setDownloadHeaders(res, "lotes_" + fechaInicio + "_" + fechaFin + ".xlsx");
+
+            try (SXSSFWorkbook wb = new SXSSFWorkbook(200)) {
+            var styles = ExcelStyleUtil.createStyles(wb);
+            var sheet = wb.createSheet("Lotes");
+            ExcelStyleUtil.trackAutosizeIfSXSSF(sheet);
+
+            String[] headers = {
+                    "Nombre del Producto", "Concentración", "Presentación", "Lote", 
+                    "Fecha Vencimiento", "Cantidad Inicial", "REG/SAN", 
+                    "CANTIDAD RECIBIDA", "CONDICIONES ALMACENAMIENTO", 
+                    "EMPAQUE MEDIATO", "EMPAQUE INMEDIATO", "TIPO ENVASE", 
+                    "ESTADO DEL ENVASE"
+            };
+            int lastCol = headers.length - 1;
+
+            ExcelStyleUtil.mergeTitle(sheet, 0, lastCol, styles.title, 
+                    "Lotes del " + fechaInicio + " al " + fechaFin);
+            Row h = sheet.createRow(1);
+            for (int i = 0; i < headers.length; i++) {
+                Cell c = h.createCell(i);
+                c.setCellValue(headers[i]);
+                c.setCellStyle(styles.header);
+            }
+            ExcelStyleUtil.setRowHeights(sheet.getRow(0), h);
+
+            int r = 2;
+            for (var lote : lotes) {
+                Row rr = sheet.createRow(r++);
+                int c = 0;
+                Cell cc;
+                cc = rr.createCell(c++); cc.setCellValue(nvl(lote.getNombreProducto()));        cc.setCellStyle(styles.text);
+                cc = rr.createCell(c++); cc.setCellValue(nvl(lote.getConcentracion()));         cc.setCellStyle(styles.text);
+                cc = rr.createCell(c++); cc.setCellValue(nvl(lote.getPresentacion()));          cc.setCellStyle(styles.text);
+                cc = rr.createCell(c++); cc.setCellValue(n(lote.getStockId()));                 cc.setCellStyle(styles.integer);
+                cc = rr.createCell(c++); cc.setCellValue(lote.getFechaVencimiento() == null ? "" : lote.getFechaVencimiento().toString()); cc.setCellStyle(styles.textCenter);
+                cc = rr.createCell(c++); cc.setCellValue(n(lote.getCantidadInicial()));         cc.setCellStyle(styles.integer);
+                // Empty columns
+                cc = rr.createCell(c++); cc.setCellValue("");                                   cc.setCellStyle(styles.text);
+                cc = rr.createCell(c++); cc.setCellValue("");                                   cc.setCellStyle(styles.text);
+                cc = rr.createCell(c++); cc.setCellValue("");                                   cc.setCellStyle(styles.text);
+                cc = rr.createCell(c++); cc.setCellValue("");                                   cc.setCellStyle(styles.text);
+                cc = rr.createCell(c++); cc.setCellValue("");                                   cc.setCellStyle(styles.text);
+                cc = rr.createCell(c++); cc.setCellValue("");                                   cc.setCellStyle(styles.text);
+                cc = rr.createCell(c++); cc.setCellValue("");                                   cc.setCellStyle(styles.text);
+
+                ExcelStyleUtil.fillRowStyles(rr, (r % 2 == 0) ? styles.zebra1 : styles.zebra2, headers.length);
+            }
+
+            ExcelStyleUtil.setupSheetCommon(sheet, 1, lastCol);
+            ExcelStyleUtil.autosizeColumns(sheet, headers.length, 
+                    new int[]{28, 16, 16, 10, 16, 14, 12, 16, 22, 16, 16, 14, 18});
+
+                wb.write(res.getOutputStream());
+                wb.dispose();
+            }
+        } catch (IllegalArgumentException e) {
+            res.setStatus(HttpServletResponse.SC_BAD_REQUEST);
+            res.setContentType("application/json");
+            res.getWriter().write("{\"error\": \"" + e.getMessage() + "\"}");
         }
     }
 
