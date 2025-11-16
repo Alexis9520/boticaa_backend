@@ -612,4 +612,12 @@ public class ProductoService {
     public List<Producto> buscarPorProveedorId(Long proveedorId) {
         return productoRepository.findByProveedorIdAndActivoTrue(proveedorId);
     }
+
+    // Buscar productos por categoría con stocks
+    public List<Producto> buscarPorCategoria(String categoria) {
+        if (categoria == null || categoria.isBlank()) {
+            return new ArrayList<>();
+        }
+        return productoRepository.findByCategoriaWithStocks(categoria);
+    }
 }
