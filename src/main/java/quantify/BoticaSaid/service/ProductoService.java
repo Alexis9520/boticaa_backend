@@ -99,6 +99,7 @@ public class ProductoService {
                         int cant = stockReq.getCantidadUnidades(); // int
                         acumulador += cant;
                         stock.setCantidadUnidades(cant);
+                        stock.setCantidadInicial(cant); // Set initial quantity
                         stock.setFechaVencimiento(stockReq.getFechaVencimiento());
                         stock.setPrecioCompra(stockReq.getPrecioCompra());
                         stock.setProducto(existente);
@@ -155,6 +156,7 @@ public class ProductoService {
                 int cant = stockReq.getCantidadUnidades(); // int
                 acumuladorPadre += cant;
                 stock.setCantidadUnidades(cant);
+                stock.setCantidadInicial(cant); // Set initial quantity
                 stock.setFechaVencimiento(stockReq.getFechaVencimiento());
                 stock.setPrecioCompra(stockReq.getPrecioCompra());
                 stock.setProducto(producto);
@@ -223,7 +225,9 @@ public class ProductoService {
 
         Stock nuevoStock = new Stock();
         nuevoStock.setCodigoStock(request.getCodigoStock());
-        nuevoStock.setCantidadUnidades(request.getCantidadUnidades()); // int esperado
+        int cant = request.getCantidadUnidades(); // int esperado
+        nuevoStock.setCantidadUnidades(cant);
+        nuevoStock.setCantidadInicial(cant); // Set initial quantity
         nuevoStock.setFechaVencimiento(request.getFechaVencimiento());
         nuevoStock.setPrecioCompra(request.getPrecioCompra());
         nuevoStock.setProducto(producto);
@@ -270,13 +274,15 @@ public class ProductoService {
         for (var loteItem : request.getLotes()) {
             Stock nuevoStock = new Stock();
             nuevoStock.setCodigoStock(loteItem.getCodigoStock());
-            nuevoStock.setCantidadUnidades(loteItem.getCantidadUnidades());
+            int cant = loteItem.getCantidadUnidades();
+            nuevoStock.setCantidadUnidades(cant);
+            nuevoStock.setCantidadInicial(cant); // Set initial quantity
             nuevoStock.setFechaVencimiento(loteItem.getFechaVencimiento());
             nuevoStock.setPrecioCompra(loteItem.getPrecioCompra());
             nuevoStock.setProducto(producto);
 
             producto.getStocks().add(nuevoStock);
-            totalUnidades += loteItem.getCantidadUnidades();
+            totalUnidades += cant;
         }
 
         int actual = producto.getCantidadGeneral() != null ? producto.getCantidadGeneral() : 0;
@@ -429,6 +435,7 @@ public class ProductoService {
                     int cant = stockReq.getCantidadUnidades(); // int
                     acumulador += cant;
                     stock.setCantidadUnidades(cant);
+                    stock.setCantidadInicial(cant); // Set initial quantity
                     stock.setFechaVencimiento(stockReq.getFechaVencimiento());
                     stock.setPrecioCompra(stockReq.getPrecioCompra());
                     stock.setProducto(producto);

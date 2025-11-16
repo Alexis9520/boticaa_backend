@@ -667,9 +667,12 @@ public class ReportsService {
                         stock.getProducto().getId(),
                         stock.getProducto().getNombre(),
                         stock.getProducto().getCodigoBarras(),
+                        stock.getProducto().getConcentracion(),
+                        stock.getProducto().getPresentacion(),
                         stock.getId(),
                         stock.getCodigoStock(),
                         stock.getCantidadUnidades(),
+                        stock.getCantidadInicial(),
                         stock.getFechaVencimiento(),
                         stock.getPrecioCompra(),
                         stock.getFechaCreacion()
