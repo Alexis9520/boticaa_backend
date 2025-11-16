@@ -47,6 +47,53 @@ GET {{baseUrl}}/api/reports/productos/export?fechaInicio=2025-08-01&fechaFin=202
 Authorization: {{authToken}}
 
 ### ============================================================
+### 5. NUEVO ENDPOINT - RECIBIR ID EN JSON
+### ============================================================
+
+### 5.1 Enviar un ID numérico
+POST {{baseUrl}}/api/reports/receive-id
+Authorization: {{authToken}}
+Content-Type: application/json
+
+{
+  "id": 1
+}
+
+### 5.2 Enviar un ID de tipo string
+POST {{baseUrl}}/api/reports/receive-id
+Authorization: {{authToken}}
+Content-Type: application/json
+
+{
+  "id": "test-123"
+}
+
+### 5.3 Probar error con campo faltante (debe retornar error 400)
+POST {{baseUrl}}/api/reports/receive-id
+Authorization: {{authToken}}
+Content-Type: application/json
+
+{
+  "otro_campo": 123
+}
+
+### ============================================================
+### 6. NUEVO ENDPOINT - LOTES EN FORMATO JSON
+### ============================================================
+
+### 6.1 Obtener reporte de lotes en formato JSON (en lugar de Excel)
+GET {{baseUrl}}/api/reports/lotes-json?fechaInicio=2025-01-01&fechaFin=2025-12-31
+Authorization: {{authToken}}
+
+### 6.2 Obtener reporte de lotes del último mes en JSON
+GET {{baseUrl}}/api/reports/lotes-json?fechaInicio=2025-10-15&fechaFin=2025-11-15
+Authorization: {{authToken}}
+
+### 6.3 Probar con fechas inválidas (debe retornar error 400)
+GET {{baseUrl}}/api/reports/lotes-json?fechaInicio=invalid-date&fechaFin=2025-12-31
+Authorization: {{authToken}}
+
+### ============================================================
 ### NOTAS:
 ### ============================================================
 # - Todos los endpoints requieren autenticación (Bearer Token)
@@ -54,6 +101,8 @@ Authorization: {{authToken}}
 # - El endpoint de exportación retorna un archivo Excel directamente
 # - Los lotes incluyen información del producto asociado
 # - El reporte de proveedores incluye la lista completa de productos activos
+# - NUEVO: /api/reports/receive-id acepta cualquier tipo de id en el campo "id"
+# - NUEVO: /api/reports/lotes-json retorna los mismos datos que /lotes pero en JSON
 
 ### ============================================================
 ### EJEMPLOS DE RESPUESTA ESPERADA
@@ -93,5 +142,30 @@ Authorization: {{authToken}}
 #         "cantidadGeneral": 500
 #       }
 #     ]
+#   }
+# ]
+
+### Respuesta esperada para /api/reports/receive-id:
+# {
+#   "message": "ID recibido correctamente",
+#   "id": 1,
+#   "received_at": "2025-11-16T02:50:23.123456"
+# }
+
+### Respuesta esperada para /api/reports/lotes-json:
+# [
+#   {
+#     "productoId": 1,
+#     "nombreProducto": "Paracetamol 500mg",
+#     "codigoBarras": "123456789",
+#     "concentracion": "500mg",
+#     "presentacion": "Tableta",
+#     "stockId": 100,
+#     "codigoStock": "LOTE-2025-001",
+#     "cantidadUnidades": 100,
+#     "cantidadInicial": 150,
+#     "fechaVencimiento": "2026-12-31",
+#     "precioCompra": 5.50,
+#     "fechaCreacion": "2025-11-15T10:30:00"
 #   }
 # ]
