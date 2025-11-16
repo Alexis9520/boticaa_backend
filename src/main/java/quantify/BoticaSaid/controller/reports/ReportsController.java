@@ -422,10 +422,11 @@ public class ReportsController {
             @RequestParam String fechaFin,
             HttpServletResponse res) throws Exception {
         
-        var lotes = svc.getLotesReportByDateRange(fechaInicio, fechaFin);
-        setDownloadHeaders(res, "lotes_" + fechaInicio + "_" + fechaFin + ".xlsx");
+        try {
+            var lotes = svc.getLotesReportByDateRange(fechaInicio, fechaFin);
+            setDownloadHeaders(res, "lotes_" + fechaInicio + "_" + fechaFin + ".xlsx");
 
-        try (SXSSFWorkbook wb = new SXSSFWorkbook(200)) {
+            try (SXSSFWorkbook wb = new SXSSFWorkbook(200)) {
             var styles = ExcelStyleUtil.createStyles(wb);
             var sheet = wb.createSheet("Lotes");
             ExcelStyleUtil.trackAutosizeIfSXSSF(sheet);
@@ -476,8 +477,13 @@ public class ReportsController {
             ExcelStyleUtil.autosizeColumns(sheet, headers.length, 
                     new int[]{28, 16, 16, 10, 16, 14, 12, 16, 22, 16, 16, 14, 18});
 
-            wb.write(res.getOutputStream());
-            wb.dispose();
+                wb.write(res.getOutputStream());
+                wb.dispose();
+            }
+        } catch (IllegalArgumentException e) {
+            res.setStatus(HttpServletResponse.SC_BAD_REQUEST);
+            res.setContentType("application/json");
+            res.getWriter().write("{\"error\": \"" + e.getMessage() + "\"}");
         }
     }
 
