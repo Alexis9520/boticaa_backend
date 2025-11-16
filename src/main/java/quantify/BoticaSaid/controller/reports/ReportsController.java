@@ -26,6 +26,7 @@ import java.math.BigDecimal;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import java.util.List;
+import java.util.Map;
 
 @RestController
 @RequestMapping("/api/reports")
@@ -412,6 +413,44 @@ public class ReportsController {
 
             wb.write(res.getOutputStream());
             wb.dispose();
+        }
+    }
+
+    // ===== Endpoint que recibe JSON con id =====
+    @PostMapping("/receive-id")
+    public org.springframework.http.ResponseEntity<?> receiveId(@RequestBody Map<String, Object> payload) {
+        try {
+            if (payload == null || !payload.containsKey("id")) {
+                return org.springframework.http.ResponseEntity.badRequest()
+                        .body(java.util.Map.of("error", "El campo 'id' es requerido"));
+            }
+            
+            Object idValue = payload.get("id");
+            return org.springframework.http.ResponseEntity.ok(java.util.Map.of(
+                    "message", "ID recibido correctamente",
+                    "id", idValue,
+                    "received_at", java.time.LocalDateTime.now().toString()
+            ));
+        } catch (Exception e) {
+            return org.springframework.http.ResponseEntity.badRequest()
+                    .body(java.util.Map.of("error", e.getMessage()));
+        }
+    }
+
+    // ===== Reportes de Lotes en formato JSON =====
+    @GetMapping("/lotes-json")
+    public org.springframework.http.ResponseEntity<?> reporteLotesJson(
+            @RequestParam String fechaInicio,
+            @RequestParam String fechaFin) {
+        try {
+            var lotes = svc.getLotesReportByDateRange(fechaInicio, fechaFin);
+            return org.springframework.http.ResponseEntity.ok(lotes);
+        } catch (IllegalArgumentException e) {
+            return org.springframework.http.ResponseEntity.badRequest()
+                    .body(java.util.Map.of("error", e.getMessage()));
+        } catch (Exception e) {
+            return org.springframework.http.ResponseEntity.internalServerError()
+                    .body(java.util.Map.of("error", "Error interno: " + e.getMessage()));
         }
     }
 
