@@ -48,7 +48,7 @@ public class SecurityConfig {
                             "http://51.161.10.179:3000", "http://51.161.10.179:5000", "http://51.161.10.179",
                             "https://109.199.106.139:3000", "http://109.199.106.139:3000",
                             "http://109.199.106.139", "https://109.199.106.139",
-                            "http://109.199.106.139:5000", "http://boticasaid.quantify.net.pe", "https://boticasaid.quantify.net.pe"
+                            "http://109.199.106.139:5000", "http://boticasaid.quantify.net.pe", "https://boticasaid.quantify.net.pe","http://nuevaesperanza.quantify.net.pe","https://nuevaesperanza.quantify.net.pe"
                     ));
                     config.setAllowedMethods(java.util.List.of("GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"));
                     config.setAllowedHeaders(java.util.List.of("*"));
