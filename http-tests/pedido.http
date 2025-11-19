@@ -1,0 +1,165 @@
+### Pedidos API Tests
+
+### Variables
+@baseUrl = http://localhost:8080
+@token = <your-jwt-token-here>
+
+### 1. Agregar Stock con Pedido - Usando ID de Producto
+POST {{baseUrl}}/api/pedidos/agregar-stock
+Content-Type: application/json
+Authorization: Bearer {{token}}
+
+{
+  "stockData": {
+    "productoId": 1,
+    "lotes": [
+      {
+        "codigoStock": "LOTE20241119-001",
+        "cantidadUnidades": 100,
+        "fechaVencimiento": "2025-12-31",
+        "precioCompra": 10.50
+      }
+    ]
+  },
+  "fechaDePedido": "2024-11-19"
+}
+
+### 2. Agregar Múltiples Lotes con Pedido
+POST {{baseUrl}}/api/pedidos/agregar-stock
+Content-Type: application/json
+Authorization: Bearer {{token}}
+
+{
+  "stockData": {
+    "productoId": 2,
+    "lotes": [
+      {
+        "codigoStock": "LOTE20241119-002",
+        "cantidadUnidades": 150,
+        "fechaVencimiento": "2026-06-30",
+        "precioCompra": 11.00
+      },
+      {
+        "codigoStock": "LOTE20241119-003",
+        "cantidadUnidades": 200,
+        "fechaVencimiento": "2026-09-15",
+        "precioCompra": 11.50
+      }
+    ]
+  },
+  "fechaDePedido": "2024-11-19"
+}
+
+### 3. Agregar Stock con Pedido - Usando Código de Barras
+POST {{baseUrl}}/api/pedidos/agregar-stock
+Content-Type: application/json
+Authorization: Bearer {{token}}
+
+{
+  "stockData": {
+    "codigoBarras": "1234567890",
+    "lotes": [
+      {
+        "codigoStock": "LOTE20241119-004",
+        "cantidadUnidades": 75,
+        "fechaVencimiento": "2025-06-30",
+        "precioCompra": 8.75
+      }
+    ]
+  },
+  "fechaDePedido": "2024-11-15"
+}
+
+### 4. Test Error - Producto Inexistente
+POST {{baseUrl}}/api/pedidos/agregar-stock
+Content-Type: application/json
+Authorization: Bearer {{token}}
+
+{
+  "stockData": {
+    "productoId": 99999,
+    "lotes": [
+      {
+        "codigoStock": "LOTE-ERROR",
+        "cantidadUnidades": 10,
+        "fechaVencimiento": "2025-12-31",
+        "precioCompra": 5.00
+      }
+    ]
+  },
+  "fechaDePedido": "2024-11-19"
+}
+
+### 5. Test Error - Sin Datos
+POST {{baseUrl}}/api/pedidos/agregar-stock
+Content-Type: application/json
+Authorization: Bearer {{token}}
+
+{
+  "fechaDePedido": "2024-11-19"
+}
+
+### Flujo Completo: Crear Producto y Agregar Stock con Pedido
+
+### Paso 1: Crear Proveedor
+POST {{baseUrl}}/api/proveedores
+Content-Type: application/json
+Authorization: Bearer {{token}}
+
+{
+  "ruc": "20123456789",
+  "razonComercial": "Distribuidora Test",
+  "numero1": "987654321",
+  "correo": "test@distribuidora.com"
+}
+
+### Paso 2: Crear Producto con Proveedor
+POST {{baseUrl}}/api/productos/nuevo
+Content-Type: application/json
+Authorization: Bearer {{token}}
+
+{
+  "nombre": "Producto Test Pedidos",
+  "codigoBarras": "TEST001",
+  "laboratorio": "Lab Test",
+  "categoria": "Medicamentos",
+  "precioVentaUnd": 15.00,
+  "proveedorId": 1
+}
+
+### Paso 3: Agregar Stock con Pedido al Producto Creado
+POST {{baseUrl}}/api/pedidos/agregar-stock
+Content-Type: application/json
+Authorization: Bearer {{token}}
+
+{
+  "stockData": {
+    "codigoBarras": "TEST001",
+    "lotes": [
+      {
+        "codigoStock": "LOTE-TEST-001",
+        "cantidadUnidades": 500,
+        "fechaVencimiento": "2026-12-31",
+        "precioCompra": 8.50
+      },
+      {
+        "codigoStock": "LOTE-TEST-002",
+        "cantidadUnidades": 300,
+        "fechaVencimiento": "2027-03-31",
+        "precioCompra": 8.75
+      }
+    ]
+  },
+  "fechaDePedido": "2024-11-19"
+}
+
+### Paso 4: Verificar Producto Actualizado
+GET {{baseUrl}}/api/productos/codigo-barras/TEST001
+Authorization: Bearer {{token}}
+
+### Notas:
+# - El endpoint crea automáticamente un pedido por cada lote agregado
+# - El proveedor se obtiene automáticamente del producto
+# - Si el producto no tiene proveedor, id_proveedor será NULL en el pedido
+# - La fecha de pedido puede ser diferente a la fecha de creación
+# - Todos los campos de fecha_creacion y fecha_modificacion son automáticos
