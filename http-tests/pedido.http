@@ -163,3 +163,19 @@ Authorization: Bearer {{token}}
 # - Si el producto no tiene proveedor, id_proveedor será NULL en el pedido
 # - La fecha de pedido puede ser diferente a la fecha de creación
 # - Todos los campos de fecha_creacion y fecha_modificacion son automáticos
+
+### 6. Obtener Reporte de Pedidos - Con ambos filtros
+GET {{baseUrl}}/api/pedidos/reporte?ID_proveedor=1&fecha_de_pedido=2024-11-19
+Authorization: Bearer {{token}}
+
+### 7. Obtener Reporte de Pedidos - Solo por Proveedor
+GET {{baseUrl}}/api/pedidos/reporte?ID_proveedor=1
+Authorization: Bearer {{token}}
+
+### 8. Obtener Reporte de Pedidos - Solo por Fecha
+GET {{baseUrl}}/api/pedidos/reporte?fecha_de_pedido=2024-11-19
+Authorization: Bearer {{token}}
+
+### 9. Obtener Reporte de Pedidos - Sin filtros (todos los pedidos)
+GET {{baseUrl}}/api/pedidos/reporte
+Authorization: Bearer {{token}}
