@@ -234,4 +234,173 @@ class PedidoServiceTest {
         List<Pedido> pedidos = pedidoRepository.findAll();
         assertEquals(0, pedidos.size(), "No debería haberse creado ningún pedido");
     }
+
+    @Test
+    void testObtenerReporteConProveedorYFecha() {
+        // Crear proveedor
+        ProveedorRequest proveedorRequest = new ProveedorRequest();
+        proveedorRequest.setRuc("20999888777");
+        proveedorRequest.setRazonComercial("Distribuidora XYZ");
+        Proveedor proveedor = proveedorService.crearProveedor(proveedorRequest);
+
+        // Crear producto con proveedor
+        ProductoRequest productoRequest = new ProductoRequest();
+        productoRequest.setNombre("Producto Test");
+        productoRequest.setCodigoBarras("BARCODE123");
+        productoRequest.setConcentracion("500mg");
+        productoRequest.setPresentacion("Tabletas");
+        productoRequest.setProveedorId(proveedor.getId());
+        Object resultado = productoService.crearProductoConStock(productoRequest);
+        Producto producto = (Producto) resultado;
+
+        // Crear pedido
+        LocalDate fechaPedido = LocalDate.of(2024, 11, 19);
+        AgregarStockConPedidoRequest request = new AgregarStockConPedidoRequest();
+        request.setFechaDePedido(fechaPedido);
+
+        AgregarLoteRequest stockData = new AgregarLoteRequest();
+        stockData.setProductoId(producto.getId());
+
+        AgregarLoteRequest.LoteItem lote = new AgregarLoteRequest.LoteItem();
+        lote.setCodigoStock("LOTE_TEST_001");
+        lote.setCantidadUnidades(100);
+        lote.setFechaVencimiento(LocalDate.of(2025, 12, 31));
+        lote.setPrecioCompra(new BigDecimal("15.50"));
+
+        stockData.setLotes(Arrays.asList(lote));
+        request.setStockData(stockData);
+
+        pedidoService.agregarStockConPedido(request);
+
+        // Obtener reporte filtrado por proveedor y fecha
+        var reporte = pedidoService.obtenerReporte(proveedor.getId(), fechaPedido);
+
+        assertNotNull(reporte, "El reporte no debe ser nulo");
+        assertEquals(1, reporte.size(), "Debe haber 1 registro en el reporte");
+
+        var dto = reporte.get(0);
+        assertEquals("BARCODE123", dto.getCodigoBarras());
+        assertEquals("Producto Test", dto.getProducto());
+        assertEquals("500mg", dto.getConcentracion());
+        assertEquals("Tabletas", dto.getPresentacion());
+        assertEquals("LOTE_TEST_001", dto.getCodigoStock());
+        assertEquals(100, dto.getCantUnidades());
+        assertEquals(100, dto.getCantInicial());
+        assertEquals(LocalDate.of(2025, 12, 31), dto.getFVencimiento());
+        assertEquals(new BigDecimal("15.50"), dto.getPrecioCompra());
+        assertNotNull(dto.getFCreacion());
+    }
+
+    @Test
+    void testObtenerReporteSoloConProveedor() {
+        // Crear proveedor
+        ProveedorRequest proveedorRequest = new ProveedorRequest();
+        proveedorRequest.setRuc("20111222333");
+        proveedorRequest.setRazonComercial("Proveedor Solo");
+        Proveedor proveedor = proveedorService.crearProveedor(proveedorRequest);
+
+        // Crear producto
+        ProductoRequest productoRequest = new ProductoRequest();
+        productoRequest.setNombre("Producto Solo Proveedor");
+        productoRequest.setProveedorId(proveedor.getId());
+        Object resultado = productoService.crearProductoConStock(productoRequest);
+        Producto producto = (Producto) resultado;
+
+        // Crear pedidos con diferentes fechas
+        for (int i = 0; i < 2; i++) {
+            AgregarStockConPedidoRequest request = new AgregarStockConPedidoRequest();
+            request.setFechaDePedido(LocalDate.now().minusDays(i));
+
+            AgregarLoteRequest stockData = new AgregarLoteRequest();
+            stockData.setProductoId(producto.getId());
+
+            AgregarLoteRequest.LoteItem lote = new AgregarLoteRequest.LoteItem();
+            lote.setCodigoStock("LOTE_" + i);
+            lote.setCantidadUnidades(50);
+            lote.setFechaVencimiento(LocalDate.now().plusYears(1));
+            lote.setPrecioCompra(new BigDecimal("10.00"));
+
+            stockData.setLotes(Arrays.asList(lote));
+            request.setStockData(stockData);
+
+            pedidoService.agregarStockConPedido(request);
+        }
+
+        // Obtener reporte solo por proveedor (sin filtro de fecha)
+        var reporte = pedidoService.obtenerReporte(proveedor.getId(), null);
+
+        assertNotNull(reporte);
+        assertEquals(2, reporte.size(), "Debe haber 2 registros del mismo proveedor");
+    }
+
+    @Test
+    void testObtenerReporteSoloConFecha() {
+        // Crear productos con diferentes fechas
+        LocalDate fechaEspecifica = LocalDate.of(2024, 10, 15);
+
+        for (int i = 0; i < 3; i++) {
+            ProductoRequest productoRequest = new ProductoRequest();
+            productoRequest.setNombre("Producto " + i);
+            Object resultado = productoService.crearProductoConStock(productoRequest);
+            Producto producto = (Producto) resultado;
+
+            AgregarStockConPedidoRequest request = new AgregarStockConPedidoRequest();
+            // 2 con la fecha específica, 1 con otra fecha
+            request.setFechaDePedido(i < 2 ? fechaEspecifica : LocalDate.now());
+
+            AgregarLoteRequest stockData = new AgregarLoteRequest();
+            stockData.setProductoId(producto.getId());
+
+            AgregarLoteRequest.LoteItem lote = new AgregarLoteRequest.LoteItem();
+            lote.setCodigoStock("LOTE_FECHA_" + i);
+            lote.setCantidadUnidades(25);
+            lote.setFechaVencimiento(LocalDate.now().plusMonths(6));
+            lote.setPrecioCompra(new BigDecimal("5.00"));
+
+            stockData.setLotes(Arrays.asList(lote));
+            request.setStockData(stockData);
+
+            pedidoService.agregarStockConPedido(request);
+        }
+
+        // Obtener reporte solo por fecha (sin filtro de proveedor)
+        var reporte = pedidoService.obtenerReporte(null, fechaEspecifica);
+
+        assertNotNull(reporte);
+        assertEquals(2, reporte.size(), "Debe haber 2 registros de la fecha específica");
+    }
+
+    @Test
+    void testObtenerReporteSinFiltros() {
+        // Crear varios pedidos
+        for (int i = 0; i < 3; i++) {
+            ProductoRequest productoRequest = new ProductoRequest();
+            productoRequest.setNombre("Producto Sin Filtro " + i);
+            Object resultado = productoService.crearProductoConStock(productoRequest);
+            Producto producto = (Producto) resultado;
+
+            AgregarStockConPedidoRequest request = new AgregarStockConPedidoRequest();
+            request.setFechaDePedido(LocalDate.now());
+
+            AgregarLoteRequest stockData = new AgregarLoteRequest();
+            stockData.setProductoId(producto.getId());
+
+            AgregarLoteRequest.LoteItem lote = new AgregarLoteRequest.LoteItem();
+            lote.setCodigoStock("LOTE_SIN_FILTRO_" + i);
+            lote.setCantidadUnidades(10);
+            lote.setFechaVencimiento(LocalDate.now().plusMonths(3));
+            lote.setPrecioCompra(new BigDecimal("2.50"));
+
+            stockData.setLotes(Arrays.asList(lote));
+            request.setStockData(stockData);
+
+            pedidoService.agregarStockConPedido(request);
+        }
+
+        // Obtener reporte sin filtros
+        var reporte = pedidoService.obtenerReporte(null, null);
+
+        assertNotNull(reporte);
+        assertEquals(3, reporte.size(), "Debe haber 3 registros sin filtros");
+    }
 }
