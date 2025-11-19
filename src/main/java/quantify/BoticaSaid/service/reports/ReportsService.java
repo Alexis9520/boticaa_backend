@@ -12,6 +12,7 @@ import quantify.BoticaSaid.dto.reports.ReportDtos.SalesSummaryDto;
 import quantify.BoticaSaid.dto.reports.ReportDtos.TopProductDto;
 import quantify.BoticaSaid.dto.reports.LoteReportDTO;
 import quantify.BoticaSaid.dto.reports.ProveedorReportDTO;
+import quantify.BoticaSaid.model.Stock;
 import quantify.BoticaSaid.repository.StockRepository;
 import quantify.BoticaSaid.repository.ProveedorRepository;
 import quantify.BoticaSaid.repository.ProductoRepository;
@@ -652,23 +653,36 @@ public class ReportsService {
     /**
      * Obtener reporte de lotes agregados por rango de fechas
      */
-    public List<LoteReportDTO> getLotesReportByDateRange(String fechaInicio, String fechaFin) {
+    public List<LoteReportDTO> getLotesReportByDateRange(String fechaInicio, String fechaFin, String proveedorID) {
         LocalDateTime inicio;
         LocalDateTime fin;
-        
+
         try {
             inicio = parseIso(fechaInicio, false);
             fin = parseIso(fechaFin, true);
         } catch (Exception e) {
             throw new IllegalArgumentException("Fechas inválidas: " + e.getMessage());
         }
-        
+
         if (inicio == null || fin == null) {
             throw new IllegalArgumentException("Fechas inválidas");
         }
 
-        var stocks = stockRepository.findByFechaCreacionBetweenWithProducto(inicio, fin);
-        
+        List<Stock> stocks;
+
+        // Lógica de decisión (^_~)
+        if (proveedorID != null && !proveedorID.trim().isEmpty() && !proveedorID.equals("null")) {
+            try {
+                Long idProv = Long.parseLong(proveedorID);
+                stocks = stockRepository.findByFechaAndProveedor(inicio, fin, idProv);
+            } catch (NumberFormatException e) {
+                throw new IllegalArgumentException("El ID del proveedor no es válido.");
+            }
+        } else {
+            // Llamamos al query ORIGINAL (solo fechas)
+            stocks = stockRepository.findByFechaCreacionBetweenWithProducto(inicio, fin);
+        }
+
         return stocks.stream()
                 .map(stock -> new LoteReportDTO(
                         stock.getProducto().getId(),

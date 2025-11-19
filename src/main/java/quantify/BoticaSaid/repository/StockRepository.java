@@ -31,4 +31,9 @@ public interface StockRepository extends JpaRepository<Stock, Integer>, JpaSpeci
     // Find stocks created within a date range with product info
     @Query("SELECT s FROM Stock s JOIN FETCH s.producto p WHERE s.fechaCreacion BETWEEN :fechaInicio AND :fechaFin ORDER BY s.fechaCreacion DESC")
     List<Stock> findByFechaCreacionBetweenWithProducto(@Param("fechaInicio") LocalDateTime fechaInicio, @Param("fechaFin") LocalDateTime fechaFin);
+
+    @Query("SELECT s FROM Stock s JOIN FETCH s.producto p WHERE s.fechaCreacion BETWEEN :fechaInicio AND :fechaFin AND p.proveedor.id = :proveedorId ORDER BY s.fechaCreacion DESC")
+    List<Stock> findByFechaAndProveedor(@Param("fechaInicio") LocalDateTime start,
+                                        @Param("fechaFin") LocalDateTime end,
+                                        @Param("proveedorId") Long proveedorId);
 }

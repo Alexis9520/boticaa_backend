@@ -441,9 +441,12 @@ public class ReportsController {
     @GetMapping("/lotes-json")
     public org.springframework.http.ResponseEntity<?> reporteLotesJson(
             @RequestParam String fechaInicio,
-            @RequestParam String fechaFin) {
+            @RequestParam String fechaFin,
+            @RequestParam(required = false) String proveedorID) {
         try {
-            var lotes = svc.getLotesReportByDateRange(fechaInicio, fechaFin);
+            // Asegúrate de pasar los 3 argumentos aquí:
+            var lotes = svc.getLotesReportByDateRange(fechaInicio, fechaFin, proveedorID);
+
             return org.springframework.http.ResponseEntity.ok(lotes);
         } catch (IllegalArgumentException e) {
             return org.springframework.http.ResponseEntity.badRequest()
@@ -454,13 +457,14 @@ public class ReportsController {
         }
     }
 
+/**
     // ===== Reportes de Lotes agregados por rango de fechas (Excel) =====
     @GetMapping(value = "/lotes", produces = MediaType.APPLICATION_OCTET_STREAM_VALUE)
     public void reporteLotesExcel(
             @RequestParam String fechaInicio,
             @RequestParam String fechaFin,
             HttpServletResponse res) throws Exception {
-        
+
         try {
             var lotes = svc.getLotesReportByDateRange(fechaInicio, fechaFin);
             setDownloadHeaders(res, "lotes_" + fechaInicio + "_" + fechaFin + ".xlsx");
@@ -471,15 +475,15 @@ public class ReportsController {
             ExcelStyleUtil.trackAutosizeIfSXSSF(sheet);
 
             String[] headers = {
-                    "Nombre del Producto", "Concentración", "Presentación", "Lote", 
-                    "Fecha Vencimiento", "Cantidad Inicial", "REG/SAN", 
-                    "CANTIDAD RECIBIDA", "CONDICIONES ALMACENAMIENTO", 
-                    "EMPAQUE MEDIATO", "EMPAQUE INMEDIATO", "TIPO ENVASE", 
+                    "Nombre del Producto", "Concentración", "Presentación", "Lote",
+                    "Fecha Vencimiento", "Cantidad Inicial", "REG/SAN",
+                    "CANTIDAD RECIBIDA", "CONDICIONES ALMACENAMIENTO",
+                    "EMPAQUE MEDIATO", "EMPAQUE INMEDIATO", "TIPO ENVASE",
                     "ESTADO DEL ENVASE"
             };
             int lastCol = headers.length - 1;
 
-            ExcelStyleUtil.mergeTitle(sheet, 0, lastCol, styles.title, 
+            ExcelStyleUtil.mergeTitle(sheet, 0, lastCol, styles.title,
                     "Lotes del " + fechaInicio + " al " + fechaFin);
             Row h = sheet.createRow(1);
             for (int i = 0; i < headers.length; i++) {
@@ -513,7 +517,7 @@ public class ReportsController {
             }
 
             ExcelStyleUtil.setupSheetCommon(sheet, 1, lastCol);
-            ExcelStyleUtil.autosizeColumns(sheet, headers.length, 
+            ExcelStyleUtil.autosizeColumns(sheet, headers.length,
                     new int[]{28, 16, 16, 10, 16, 14, 12, 16, 22, 16, 16, 14, 18});
 
                 wb.write(res.getOutputStream());
@@ -525,7 +529,7 @@ public class ReportsController {
             res.getWriter().write("{\"error\": \"" + e.getMessage() + "\"}");
         }
     }
-
+*/
     // ===== Reporte de Proveedores con su lista de productos =====
     @GetMapping("/proveedores")
     public org.springframework.http.ResponseEntity<?> reporteProveedores() {
