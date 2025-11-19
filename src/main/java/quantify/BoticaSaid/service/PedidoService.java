@@ -70,8 +70,8 @@ public class PedidoService {
         // Obtener el proveedor del producto (puede ser null)
         Proveedor proveedor = producto.getProveedor();
 
-        // Guardar los stocks creados y sus timestamps para poder recuperarlos después
-        List<Stock> stocksCreados = new ArrayList<>();
+        // Guardar los códigos de stock para identificar los stocks creados después
+        List<String> codigosStock = new ArrayList<>();
         LocalDateTime timestampInicio = LocalDateTime.now();
 
         int totalUnidades = 0;
@@ -86,7 +86,7 @@ public class PedidoService {
             nuevoStock.setProducto(producto);
 
             producto.getStocks().add(nuevoStock);
-            stocksCreados.add(nuevoStock);
+            codigosStock.add(loteItem.getCodigoStock());
             totalUnidades += cant;
         }
 
@@ -95,13 +95,22 @@ public class PedidoService {
         producto.setCantidadGeneral(actual + totalUnidades);
 
         // Guardar el producto (esto guardará en cascada los stocks)
-        productoRepository.save(producto);
+        Producto productoGuardado = productoRepository.save(producto);
+
+        // Buscar los stocks recién creados basándonos en el timestamp
+        LocalDateTime timestampFin = LocalDateTime.now().plusSeconds(1);
+        List<Stock> stocksCreados = stockRepository.findByFechaCreacionBetweenWithProducto(timestampInicio, timestampFin);
+
+        // Filtrar solo los stocks del producto actual
+        stocksCreados = stocksCreados.stream()
+            .filter(s -> s.getProducto().getId().equals(productoGuardado.getId()))
+            .toList();
 
         // Crear un pedido por cada stock creado
         for (Stock stock : stocksCreados) {
             Pedido pedido = new Pedido();
             pedido.setStock(stock);
-            pedido.setProducto(producto);
+            pedido.setProducto(productoGuardado);
             pedido.setProveedor(proveedor);
             pedido.setFechaDePedido(request.getFechaDePedido());
             
