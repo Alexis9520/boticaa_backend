@@ -4,6 +4,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import quantify.BoticaSaid.dto.pedido.AgregarStockConPedidoRequest;
+import quantify.BoticaSaid.dto.pedido.PedidoReporteDTO;
 import quantify.BoticaSaid.dto.stock.AgregarLoteRequest;
 import quantify.BoticaSaid.model.Pedido;
 import quantify.BoticaSaid.model.Producto;
@@ -13,10 +14,12 @@ import quantify.BoticaSaid.repository.PedidoRepository;
 import quantify.BoticaSaid.repository.ProductoRepository;
 import quantify.BoticaSaid.repository.StockRepository;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 @Service
 public class PedidoService {
@@ -118,5 +121,52 @@ public class PedidoService {
         }
 
         return true;
+    }
+
+    /**
+     * Obtener reporte de pedidos filtrado por proveedor y/o fecha de pedido
+     * 
+     * @param proveedorId ID del proveedor (opcional)
+     * @param fechaPedido Fecha de pedido (opcional)
+     * @return Lista de DTOs con información del reporte
+     */
+    public List<PedidoReporteDTO> obtenerReporte(Long proveedorId, LocalDate fechaPedido) {
+        List<Pedido> pedidos = pedidoRepository.findByFilters(proveedorId, fechaPedido);
+        
+        return pedidos.stream()
+            .map(this::convertirAPedidoReporteDTO)
+            .collect(Collectors.toList());
+    }
+
+    /**
+     * Convierte un Pedido a PedidoReporteDTO
+     * 
+     * @param pedido El pedido a convertir
+     * @return DTO con la información del reporte
+     */
+    private PedidoReporteDTO convertirAPedidoReporteDTO(Pedido pedido) {
+        PedidoReporteDTO dto = new PedidoReporteDTO();
+        
+        // Datos del producto
+        Producto producto = pedido.getProducto();
+        if (producto != null) {
+            dto.setCodigoBarras(producto.getCodigoBarras());
+            dto.setProducto(producto.getNombre());
+            dto.setConcentracion(producto.getConcentracion());
+            dto.setPresentacion(producto.getPresentacion());
+        }
+        
+        // Datos del stock
+        Stock stock = pedido.getStock();
+        if (stock != null) {
+            dto.setCodigoStock(stock.getCodigoStock());
+            dto.setCantUnidades(stock.getCantidadUnidades());
+            dto.setCantInicial(stock.getCantidadInicial());
+            dto.setFVencimiento(stock.getFechaVencimiento());
+            dto.setPrecioCompra(stock.getPrecioCompra());
+            dto.setFCreacion(stock.getFechaCreacion());
+        }
+        
+        return dto;
     }
 }
