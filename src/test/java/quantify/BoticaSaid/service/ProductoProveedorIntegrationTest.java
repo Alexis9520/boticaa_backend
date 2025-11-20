@@ -56,9 +56,10 @@ class ProductoProveedorIntegrationTest {
         Producto producto = (Producto) resultado;
 
         assertNotNull(producto);
-        assertNotNull(producto.getProveedor());
-        assertEquals(proveedor.getId(), producto.getProveedor().getId());
-        assertEquals("Distribuidora ABC", producto.getProveedor().getRazonComercial());
+        assertFalse(producto.getProductoProveedores().isEmpty());
+        assertEquals(1, producto.getProductoProveedores().size());
+        assertEquals(proveedor.getId(), producto.getProductoProveedores().get(0).getProveedor().getId());
+        assertEquals("Distribuidora ABC", producto.getProductoProveedores().get(0).getProveedor().getRazonComercial());
     }
 
     @Test
@@ -71,7 +72,7 @@ class ProductoProveedorIntegrationTest {
         Producto producto = (Producto) resultado;
 
         assertNotNull(producto);
-        assertNull(producto.getProveedor());
+        assertTrue(producto.getProductoProveedores().isEmpty());
     }
 
     @Test
@@ -95,8 +96,8 @@ class ProductoProveedorIntegrationTest {
         
         Producto actualizado = productoService.actualizarPorID(producto.getId(), updateReq);
 
-        assertNotNull(actualizado.getProveedor());
-        assertEquals(proveedor.getId(), actualizado.getProveedor().getId());
+        assertFalse(actualizado.getProductoProveedores().isEmpty());
+        assertEquals(proveedor.getId(), actualizado.getProductoProveedores().get(0).getProveedor().getId());
     }
 
     @Test
@@ -121,7 +122,7 @@ class ProductoProveedorIntegrationTest {
         
         Producto actualizado = productoService.actualizarPorID(producto.getId(), updateReq);
 
-        assertNull(actualizado.getProveedor());
+        assertTrue(actualizado.getProductoProveedores().isEmpty());
     }
 
     @Test
@@ -175,7 +176,7 @@ class ProductoProveedorIntegrationTest {
         Producto producto = (Producto) resultado;
 
         assertNotNull(producto);
-        assertNull(producto.getProveedor()); // Debe ser null si no existe el proveedor
+        assertTrue(producto.getProductoProveedores().isEmpty()); // Debe estar vacío si no existe el proveedor
     }
 
     @Test
@@ -196,6 +197,6 @@ class ProductoProveedorIntegrationTest {
         Producto producto = (Producto) resultado;
 
         assertNotNull(producto);
-        assertNull(producto.getProveedor()); // Debe ser null si el proveedor está inactivo
+        assertTrue(producto.getProductoProveedores().isEmpty()); // Debe estar vacío si el proveedor está inactivo
     }
 }
