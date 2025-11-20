@@ -6,11 +6,16 @@ import org.springframework.data.domain.PageRequest;
 import quantify.BoticaSaid.dto.dashboard.DashboardResumenDTO;
 import quantify.BoticaSaid.dto.producto.ProductoRequest;
 import quantify.BoticaSaid.dto.producto.ProductoResponse;
+import quantify.BoticaSaid.dto.proveedor.ProveedorSimpleDTO;
 import quantify.BoticaSaid.dto.stock.AgregarStockRequest;
 import quantify.BoticaSaid.dto.stock.StockLoteDTO;
 import quantify.BoticaSaid.model.Producto;
+import quantify.BoticaSaid.model.ProductoProveedor;
+import quantify.BoticaSaid.model.Proveedor;
 import quantify.BoticaSaid.model.Stock;
 import quantify.BoticaSaid.repository.ProductoRepository;
+import quantify.BoticaSaid.repository.ProveedorRepository;
+import quantify.BoticaSaid.repository.ProductoProveedorRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.data.domain.Pageable;
@@ -29,6 +34,12 @@ public class ProductoService {
 
     @Autowired
     private StockRepository stockRepository;
+
+    @Autowired
+    private ProveedorRepository proveedorRepository;
+
+    @Autowired
+    private ProductoProveedorRepository productoProveedorRepository;
 
     /**
      * Crear producto con stock.
@@ -95,6 +106,9 @@ public class ProductoService {
                     }
                 }
 
+                // Sincronizar proveedores
+                sincronizarProveedores(existente, request.getProveedorIds());
+
                 Producto guardado = productoRepository.save(existente);
                 Map<String, Object> response = new HashMap<>();
                 response.put("reactivado", true);
@@ -140,6 +154,9 @@ public class ProductoService {
             // Si no hay stocks: usar lo que vino en el request o 0
             producto.setCantidadGeneral(request.getCantidadGeneral() != null ? request.getCantidadGeneral() : 0);
         }
+
+        // Sincronizar proveedores
+        sincronizarProveedores(producto, request.getProveedorIds());
 
         Producto guardado = productoRepository.save(producto);
         return guardado;
@@ -366,6 +383,9 @@ public class ProductoService {
                 producto.setCantidadGeneral(0);
             }
         }
+
+        // Sincronizar proveedores si se proporcionaron
+        sincronizarProveedores(producto, request.getProveedorIds());
     }
 
     // Productos con stock menor a umbral
@@ -390,6 +410,28 @@ public class ProductoService {
         dto.setFechaVencimiento(stock.getFechaVencimiento());
         dto.setPrecioCompra(stock.getPrecioCompra());
         return dto;
+    }
+
+    /**
+     * Sincroniza las relaciones producto-proveedor basándose en los IDs de proveedores en el request
+     */
+    private void sincronizarProveedores(Producto producto, List<Long> proveedorIds) {
+        if (proveedorIds == null || proveedorIds.isEmpty()) {
+            // Si no se especifican proveedores, no hacer nada (mantener los existentes)
+            return;
+        }
+
+        // Limpiar relaciones existentes
+        producto.getProductoProveedores().clear();
+
+        // Crear nuevas relaciones
+        for (Long proveedorId : proveedorIds) {
+            Proveedor proveedor = proveedorRepository.findById(proveedorId).orElse(null);
+            if (proveedor != null && proveedor.isActivo()) {
+                ProductoProveedor pp = new ProductoProveedor(producto, proveedor);
+                producto.getProductoProveedores().add(pp);
+            }
+        }
     }
 
     public ProductoResponse toProductoResponse(Producto producto) {
@@ -418,6 +460,23 @@ public class ProductoService {
             );
         } else {
             resp.setStocks(new ArrayList<>());
+        }
+
+        // Incluir información de proveedores
+        if (producto.getProductoProveedores() != null && !producto.getProductoProveedores().isEmpty()) {
+            resp.setProveedores(
+                    producto.getProductoProveedores().stream()
+                            .map(pp -> new ProveedorSimpleDTO(
+                                    pp.getProveedor().getId(),
+                                    pp.getProveedor().getNombre(),
+                                    pp.getProveedor().getRuc(),
+                                    pp.getPrecioCompra(),
+                                    pp.isEsPrincipal()
+                            ))
+                            .collect(Collectors.toList())
+            );
+        } else {
+            resp.setProveedores(new ArrayList<>());
         }
 
         return resp;

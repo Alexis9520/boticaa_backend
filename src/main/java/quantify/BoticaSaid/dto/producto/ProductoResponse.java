@@ -1,5 +1,6 @@
 package quantify.BoticaSaid.dto.producto;
 
+import quantify.BoticaSaid.dto.proveedor.ProveedorSimpleDTO;
 import quantify.BoticaSaid.dto.stock.StockLoteDTO;
 import java.math.BigDecimal;
 import java.util.List;
@@ -23,6 +24,7 @@ public class ProductoResponse {
     private String tipoMedicamento;
     private String presentacion;
     private List<StockLoteDTO> stocks;
+    private List<ProveedorSimpleDTO> proveedores;
 
     // Getters y setters
 
@@ -145,6 +147,20 @@ public class ProductoResponse {
     public void setStocks(List<StockLoteDTO> stocks) {
         this.stocks = stocks;
     }
-    public String getPresentacion() { return presentacion; }
-    public void setPresentacion(String presentacion) { this.presentacion = presentacion; }
+    
+    public String getPresentacion() { 
+        return presentacion; 
+    }
+    
+    public void setPresentacion(String presentacion) { 
+        this.presentacion = presentacion; 
+    }
+
+    public List<ProveedorSimpleDTO> getProveedores() {
+        return proveedores;
+    }
+
+    public void setProveedores(List<ProveedorSimpleDTO> proveedores) {
+        this.proveedores = proveedores;
+    }
 }

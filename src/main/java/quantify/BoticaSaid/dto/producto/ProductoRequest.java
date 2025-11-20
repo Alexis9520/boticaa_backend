@@ -35,6 +35,9 @@ public class ProductoRequest {
     private String presentacion;
 
     private List<StockRequest> stocks;
+    
+    // IDs de proveedores asociados al producto
+    private List<Long> proveedorIds;
 
     // Getters y setters
 
@@ -164,5 +167,13 @@ public class ProductoRequest {
 
     public void setStocks(List<StockRequest> stocks) {
         this.stocks = stocks;
+    }
+
+    public List<Long> getProveedorIds() {
+        return proveedorIds;
+    }
+
+    public void setProveedorIds(List<Long> proveedorIds) {
+        this.proveedorIds = proveedorIds;
     }
 }
