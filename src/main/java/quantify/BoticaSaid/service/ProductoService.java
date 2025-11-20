@@ -21,7 +21,10 @@ import java.util.stream.Collectors;
 
 import quantify.BoticaSaid.repository.StockRepository;
 import quantify.BoticaSaid.repository.ProveedorRepository;
+import quantify.BoticaSaid.repository.ProductoProveedorRepository;
 import quantify.BoticaSaid.model.Proveedor;
+import quantify.BoticaSaid.model.ProductoProveedor;
+import quantify.BoticaSaid.dto.producto.ProveedorSimpleDTO;
 
 @Service
 public class ProductoService {
@@ -34,6 +37,9 @@ public class ProductoService {
 
     @Autowired
     private ProveedorRepository proveedorRepository;
+
+    @Autowired
+    private ProductoProveedorRepository productoProveedorRepository;
 
     /**
      * Crear producto con stock.
@@ -76,17 +82,8 @@ public class ProductoService {
                 existente.setTipoMedicamento(request.getTipoMedicamento());
                 existente.setPresentacion(request.getPresentacion());
 
-                // Manejar proveedor
-                if (request.getProveedorId() != null) {
-                    Optional<Proveedor> proveedorOpt = proveedorRepository.findById(request.getProveedorId());
-                    if (proveedorOpt.isPresent() && proveedorOpt.get().isActivo()) {
-                        existente.setProveedor(proveedorOpt.get());
-                    } else {
-                        existente.setProveedor(null);
-                    }
-                } else {
-                    existente.setProveedor(null);
-                }
+                // Sincronizar proveedores (nueva funcionalidad con múltiples proveedores)
+                sincronizarProveedores(existente, request);
 
                 // Limpiar stocks anteriores (orphanRemoval activo)
                 existente.getStocks().clear();
@@ -140,13 +137,8 @@ public class ProductoService {
         producto.setTipoMedicamento(request.getTipoMedicamento());
         producto.setPresentacion(request.getPresentacion());
 
-        // Manejar proveedor
-        if (request.getProveedorId() != null) {
-            Optional<Proveedor> proveedorOpt = proveedorRepository.findById(request.getProveedorId());
-            if (proveedorOpt.isPresent() && proveedorOpt.get().isActivo()) {
-                producto.setProveedor(proveedorOpt.get());
-            }
-        }
+        // Sincronizar proveedores (nueva funcionalidad con múltiples proveedores)
+        sincronizarProveedores(producto, request);
 
         int acumuladorPadre = 0;
         if (request.getStocks() != null && !request.getStocks().isEmpty()) {
@@ -413,17 +405,8 @@ public class ProductoService {
         producto.setTipoMedicamento(request.getTipoMedicamento());
         producto.setPresentacion(request.getPresentacion());
 
-        // Manejar proveedor
-        if (request.getProveedorId() != null) {
-            Optional<Proveedor> proveedorOpt = proveedorRepository.findById(request.getProveedorId());
-            if (proveedorOpt.isPresent() && proveedorOpt.get().isActivo()) {
-                producto.setProveedor(proveedorOpt.get());
-            } else {
-                producto.setProveedor(null);
-            }
-        } else {
-            producto.setProveedor(null);
-        }
+        // Sincronizar proveedores (nueva funcionalidad con múltiples proveedores)
+        sincronizarProveedores(producto, request);
 
         if (replaceStocks) {
             producto.getStocks().clear();
@@ -502,12 +485,30 @@ public class ProductoService {
         resp.setTipoMedicamento(producto.getTipoMedicamento());
         resp.setPresentacion(producto.getPresentacion());
 
-        // Agregar información del proveedor
-        if (producto.getProveedor() != null) {
-            resp.setProveedorId(producto.getProveedor().getId());
-            resp.setProveedorNombre(producto.getProveedor().getRazonComercial() != null 
-                ? producto.getProveedor().getRazonComercial() 
-                : producto.getProveedor().getRuc());
+        // Agregar información de proveedores (múltiples)
+        if (producto.getProductoProveedores() != null && !producto.getProductoProveedores().isEmpty()) {
+            List<ProveedorSimpleDTO> proveedoresList = producto.getProductoProveedores().stream()
+                    .map(pp -> {
+                        Proveedor prov = pp.getProveedor();
+                        return new ProveedorSimpleDTO(
+                            prov.getId(),
+                            prov.getRazonComercial(),
+                            prov.getRuc()
+                        );
+                    })
+                    .collect(Collectors.toList());
+            resp.setProveedores(proveedoresList);
+            
+            // Mantener compatibilidad: establecer primer proveedor en campos legacy
+            if (!proveedoresList.isEmpty()) {
+                ProveedorSimpleDTO primerProveedor = proveedoresList.get(0);
+                resp.setProveedorId(primerProveedor.getId());
+                resp.setProveedorNombre(primerProveedor.getRazonComercial() != null 
+                    ? primerProveedor.getRazonComercial() 
+                    : primerProveedor.getRuc());
+            }
+        } else {
+            resp.setProveedores(new ArrayList<>());
         }
 
         if (producto.getStocks() != null && !producto.getStocks().isEmpty()) {
@@ -610,7 +611,11 @@ public class ProductoService {
 
     // Buscar productos por proveedor
     public List<Producto> buscarPorProveedorId(Long proveedorId) {
-        return productoRepository.findByProveedorIdAndActivoTrue(proveedorId);
+        List<ProductoProveedor> productoProveedores = productoProveedorRepository.findByProveedorId(proveedorId);
+        return productoProveedores.stream()
+                .map(ProductoProveedor::getProducto)
+                .filter(Producto::isActivo)
+                .collect(Collectors.toList());
     }
 
     // Buscar productos por categoría con stocks
@@ -619,5 +624,36 @@ public class ProductoService {
             return new ArrayList<>();
         }
         return productoRepository.findByCategoriaWithStocks(categoria);
+    }
+
+    /**
+     * Método auxiliar para sincronizar proveedores de un producto.
+     * Acepta tanto proveedorId (compatibilidad) como proveedorIds (nueva funcionalidad).
+     */
+    private void sincronizarProveedores(Producto producto, ProductoRequest request) {
+        // Limpiar relaciones actuales
+        producto.getProductoProveedores().clear();
+        
+        // Recolectar IDs de proveedores desde ambas fuentes
+        Set<Long> proveedorIdsSet = new HashSet<>();
+        
+        // Agregar proveedorId individual si existe (compatibilidad con frontend)
+        if (request.getProveedorId() != null) {
+            proveedorIdsSet.add(request.getProveedorId());
+        }
+        
+        // Agregar proveedorIds lista si existe
+        if (request.getProveedorIds() != null && !request.getProveedorIds().isEmpty()) {
+            proveedorIdsSet.addAll(request.getProveedorIds());
+        }
+        
+        // Crear relaciones con proveedores activos
+        for (Long proveedorId : proveedorIdsSet) {
+            Optional<Proveedor> proveedorOpt = proveedorRepository.findById(proveedorId);
+            if (proveedorOpt.isPresent() && proveedorOpt.get().isActivo()) {
+                ProductoProveedor pp = new ProductoProveedor(producto, proveedorOpt.get());
+                producto.getProductoProveedores().add(pp);
+            }
+        }
     }
 }

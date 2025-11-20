@@ -34,7 +34,11 @@ public class ProductoRequest {
     private String tipoMedicamento;
     private String presentacion;
 
+    // Mantener proveedorId para compatibilidad con frontend
     private Long proveedorId;
+
+    // Nueva lista de proveedores
+    private List<Long> proveedorIds;
 
     private List<StockRequest> stocks;
 
@@ -174,5 +178,13 @@ public class ProductoRequest {
 
     public void setProveedorId(Long proveedorId) {
         this.proveedorId = proveedorId;
+    }
+
+    public List<Long> getProveedorIds() {
+        return proveedorIds;
+    }
+
+    public void setProveedorIds(List<Long> proveedorIds) {
+        this.proveedorIds = proveedorIds;
     }
 }

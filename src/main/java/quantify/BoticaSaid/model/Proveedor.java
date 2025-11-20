@@ -40,8 +40,8 @@ public class Proveedor {
     @Column(nullable = false)
     private boolean activo = true;
 
-    @OneToMany(mappedBy = "proveedor", fetch = FetchType.LAZY)
-    private List<Producto> productos = new ArrayList<>();
+    @OneToMany(mappedBy = "proveedor", cascade = CascadeType.ALL, fetch = FetchType.LAZY, orphanRemoval = true)
+    private List<ProductoProveedor> productoProveedores = new ArrayList<>();
 
     // Constructor vacío
     public Proveedor() {}
@@ -128,11 +128,11 @@ public class Proveedor {
         this.activo = activo;
     }
 
-    public List<Producto> getProductos() {
-        return productos;
+    public List<ProductoProveedor> getProductoProveedores() {
+        return productoProveedores;
     }
 
-    public void setProductos(List<Producto> productos) {
-        this.productos = productos;
+    public void setProductoProveedores(List<ProductoProveedor> productoProveedores) {
+        this.productoProveedores = productoProveedores;
     }
 }

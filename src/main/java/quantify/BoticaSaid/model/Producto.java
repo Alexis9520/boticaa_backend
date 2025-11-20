@@ -67,9 +67,8 @@ public class Producto {
     @OneToMany(mappedBy = "producto", cascade = CascadeType.ALL, fetch = FetchType.LAZY, orphanRemoval = true)
     private List<Stock> stocks = new ArrayList<>();
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "proveedor_id")
-    private Proveedor proveedor;
+    @OneToMany(mappedBy = "producto", cascade = CascadeType.ALL, fetch = FetchType.LAZY, orphanRemoval = true)
+    private List<ProductoProveedor> productoProveedores = new ArrayList<>();
 
     @Column(name = "Cantidad_unidades_blister")
     private Integer CantidadUnidadesBlister;
@@ -233,11 +232,11 @@ public class Producto {
         this.precioVentaBlister = precioVentaBlister;
     }
 
-    public Proveedor getProveedor() {
-        return proveedor;
+    public List<ProductoProveedor> getProductoProveedores() {
+        return productoProveedores;
     }
 
-    public void setProveedor(Proveedor proveedor) {
-        this.proveedor = proveedor;
+    public void setProductoProveedores(List<ProductoProveedor> productoProveedores) {
+        this.productoProveedores = productoProveedores;
     }
 }
