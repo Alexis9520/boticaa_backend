@@ -22,8 +22,14 @@ public class ProductoResponse {
     private String principioActivo;
     private String tipoMedicamento;
     private String presentacion;
+    
+    // Mantener para compatibilidad con frontend (primer proveedor de la lista)
     private Long proveedorId;
     private String proveedorNombre;
+    
+    // Lista de proveedores (nueva funcionalidad)
+    private List<ProveedorSimpleDTO> proveedores;
+    
     private List<StockLoteDTO> stocks;
 
     // Getters y setters
@@ -164,5 +170,13 @@ public class ProductoResponse {
 
     public void setProveedorNombre(String proveedorNombre) {
         this.proveedorNombre = proveedorNombre;
+    }
+
+    public List<ProveedorSimpleDTO> getProveedores() {
+        return proveedores;
+    }
+
+    public void setProveedores(List<ProveedorSimpleDTO> proveedores) {
+        this.proveedores = proveedores;
     }
 }

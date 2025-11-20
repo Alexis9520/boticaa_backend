@@ -56,9 +56,10 @@ class ProductoProveedorIntegrationTest {
         Producto producto = (Producto) resultado;
 
         assertNotNull(producto);
-        assertNotNull(producto.getProveedor());
-        assertEquals(proveedor.getId(), producto.getProveedor().getId());
-        assertEquals("Distribuidora ABC", producto.getProveedor().getRazonComercial());
+        assertFalse(producto.getProductoProveedores().isEmpty());
+        assertEquals(1, producto.getProductoProveedores().size());
+        assertEquals(proveedor.getId(), producto.getProductoProveedores().get(0).getProveedor().getId());
+        assertEquals("Distribuidora ABC", producto.getProductoProveedores().get(0).getProveedor().getRazonComercial());
     }
 
     @Test
@@ -71,7 +72,7 @@ class ProductoProveedorIntegrationTest {
         Producto producto = (Producto) resultado;
 
         assertNotNull(producto);
-        assertNull(producto.getProveedor());
+        assertTrue(producto.getProductoProveedores().isEmpty());
     }
 
     @Test
@@ -95,8 +96,8 @@ class ProductoProveedorIntegrationTest {
         
         Producto actualizado = productoService.actualizarPorID(producto.getId(), updateReq);
 
-        assertNotNull(actualizado.getProveedor());
-        assertEquals(proveedor.getId(), actualizado.getProveedor().getId());
+        assertFalse(actualizado.getProductoProveedores().isEmpty());
+        assertEquals(proveedor.getId(), actualizado.getProductoProveedores().get(0).getProveedor().getId());
     }
 
     @Test
@@ -121,7 +122,7 @@ class ProductoProveedorIntegrationTest {
         
         Producto actualizado = productoService.actualizarPorID(producto.getId(), updateReq);
 
-        assertNull(actualizado.getProveedor());
+        assertTrue(actualizado.getProductoProveedores().isEmpty());
     }
 
     @Test
@@ -175,7 +176,7 @@ class ProductoProveedorIntegrationTest {
         Producto producto = (Producto) resultado;
 
         assertNotNull(producto);
-        assertNull(producto.getProveedor()); // Debe ser null si no existe el proveedor
+        assertTrue(producto.getProductoProveedores().isEmpty()); // Debe estar vacío si no existe el proveedor
     }
 
     @Test
@@ -196,6 +197,136 @@ class ProductoProveedorIntegrationTest {
         Producto producto = (Producto) resultado;
 
         assertNotNull(producto);
-        assertNull(producto.getProveedor()); // Debe ser null si el proveedor está inactivo
+        assertTrue(producto.getProductoProveedores().isEmpty()); // Debe estar vacío si el proveedor está inactivo
+    }
+
+    @Test
+    void testCrearProductoConMultiplesProveedores() {
+        // Crear dos proveedores
+        ProveedorRequest proveedorReq1 = new ProveedorRequest();
+        proveedorReq1.setRuc("20111111111");
+        proveedorReq1.setRazonComercial("Proveedor Uno");
+        Proveedor proveedor1 = proveedorService.crearProveedor(proveedorReq1);
+
+        ProveedorRequest proveedorReq2 = new ProveedorRequest();
+        proveedorReq2.setRuc("20222222222");
+        proveedorReq2.setRazonComercial("Proveedor Dos");
+        Proveedor proveedor2 = proveedorService.crearProveedor(proveedorReq2);
+
+        // Crear producto con múltiples proveedores usando proveedorIds
+        ProductoRequest productoReq = new ProductoRequest();
+        productoReq.setNombre("Multivitamínico");
+        productoReq.setProveedorIds(java.util.Arrays.asList(proveedor1.getId(), proveedor2.getId()));
+        
+        Object resultado = productoService.crearProductoConStock(productoReq);
+        Producto producto = (Producto) resultado;
+
+        assertNotNull(producto);
+        assertEquals(2, producto.getProductoProveedores().size());
+        
+        // Verificar que ambos proveedores están presentes
+        java.util.List<Long> proveedorIds = producto.getProductoProveedores().stream()
+                .map(pp -> pp.getProveedor().getId())
+                .collect(java.util.stream.Collectors.toList());
+        assertTrue(proveedorIds.contains(proveedor1.getId()));
+        assertTrue(proveedorIds.contains(proveedor2.getId()));
+    }
+
+    @Test
+    void testCrearProductoConProveedorIdYProveedorIds() {
+        // Crear tres proveedores
+        ProveedorRequest proveedorReq1 = new ProveedorRequest();
+        proveedorReq1.setRuc("20333333333");
+        proveedorReq1.setRazonComercial("Proveedor Tres");
+        Proveedor proveedor1 = proveedorService.crearProveedor(proveedorReq1);
+
+        ProveedorRequest proveedorReq2 = new ProveedorRequest();
+        proveedorReq2.setRuc("20444444444");
+        proveedorReq2.setRazonComercial("Proveedor Cuatro");
+        Proveedor proveedor2 = proveedorService.crearProveedor(proveedorReq2);
+
+        ProveedorRequest proveedorReq3 = new ProveedorRequest();
+        proveedorReq3.setRuc("20555555555");
+        proveedorReq3.setRazonComercial("Proveedor Cinco");
+        Proveedor proveedor3 = proveedorService.crearProveedor(proveedorReq3);
+
+        // Crear producto usando tanto proveedorId como proveedorIds
+        // (deben fusionarse sin duplicados)
+        ProductoRequest productoReq = new ProductoRequest();
+        productoReq.setNombre("Antibiótico");
+        productoReq.setProveedorId(proveedor1.getId());
+        productoReq.setProveedorIds(java.util.Arrays.asList(proveedor2.getId(), proveedor3.getId()));
+        
+        Object resultado = productoService.crearProductoConStock(productoReq);
+        Producto producto = (Producto) resultado;
+
+        assertNotNull(producto);
+        assertEquals(3, producto.getProductoProveedores().size());
+    }
+
+    @Test
+    void testProductoResponseConMultiplesProveedores() {
+        // Crear dos proveedores
+        ProveedorRequest proveedorReq1 = new ProveedorRequest();
+        proveedorReq1.setRuc("20666666666");
+        proveedorReq1.setRazonComercial("Proveedor Seis");
+        Proveedor proveedor1 = proveedorService.crearProveedor(proveedorReq1);
+
+        ProveedorRequest proveedorReq2 = new ProveedorRequest();
+        proveedorReq2.setRuc("20777777777");
+        proveedorReq2.setRazonComercial("Proveedor Siete");
+        Proveedor proveedor2 = proveedorService.crearProveedor(proveedorReq2);
+
+        // Crear producto con múltiples proveedores
+        ProductoRequest productoReq = new ProductoRequest();
+        productoReq.setNombre("Analgésico");
+        productoReq.setProveedorIds(java.util.Arrays.asList(proveedor1.getId(), proveedor2.getId()));
+        
+        Object resultado = productoService.crearProductoConStock(productoReq);
+        Producto producto = (Producto) resultado;
+
+        // Convertir a response
+        quantify.BoticaSaid.dto.producto.ProductoResponse response = productoService.toProductoResponse(producto);
+
+        assertNotNull(response);
+        assertNotNull(response.getProveedores());
+        assertEquals(2, response.getProveedores().size());
+        
+        // Verificar compatibilidad: el primer proveedor debe estar en proveedorId y proveedorNombre
+        assertNotNull(response.getProveedorId());
+        assertNotNull(response.getProveedorNombre());
+        assertEquals(proveedor1.getId(), response.getProveedorId());
+        assertEquals("Proveedor Seis", response.getProveedorNombre());
+    }
+
+    @Test
+    void testActualizarProductoAgregandoProveedor() {
+        // Crear dos proveedores
+        ProveedorRequest proveedorReq1 = new ProveedorRequest();
+        proveedorReq1.setRuc("20888888888");
+        proveedorReq1.setRazonComercial("Proveedor Ocho");
+        Proveedor proveedor1 = proveedorService.crearProveedor(proveedorReq1);
+
+        ProveedorRequest proveedorReq2 = new ProveedorRequest();
+        proveedorReq2.setRuc("20999999999");
+        proveedorReq2.setRazonComercial("Proveedor Nueve");
+        Proveedor proveedor2 = proveedorService.crearProveedor(proveedorReq2);
+
+        // Crear producto con un proveedor
+        ProductoRequest productoReq = new ProductoRequest();
+        productoReq.setNombre("Jarabe");
+        productoReq.setProveedorId(proveedor1.getId());
+        Object resultado = productoService.crearProductoConStock(productoReq);
+        Producto producto = (Producto) resultado;
+
+        // Actualizar agregando segundo proveedor
+        ProductoRequest updateReq = new ProductoRequest();
+        updateReq.setNombre("Jarabe");
+        updateReq.setProveedorIds(java.util.Arrays.asList(proveedor1.getId(), proveedor2.getId()));
+        
+        Producto actualizado = productoService.actualizarPorID(producto.getId(), updateReq);
+
+        assertNotNull(actualizado);
+        assertEquals(2, actualizado.getProductoProveedores().size());
     }
 }

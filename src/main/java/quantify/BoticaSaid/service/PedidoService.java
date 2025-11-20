@@ -9,6 +9,7 @@ import quantify.BoticaSaid.dto.stock.AgregarLoteRequest;
 import quantify.BoticaSaid.model.Pedido;
 import quantify.BoticaSaid.model.Producto;
 import quantify.BoticaSaid.model.Proveedor;
+import quantify.BoticaSaid.model.ProductoProveedor;
 import quantify.BoticaSaid.model.Stock;
 import quantify.BoticaSaid.repository.PedidoRepository;
 import quantify.BoticaSaid.repository.ProductoRepository;
@@ -70,8 +71,19 @@ public class PedidoService {
             return false;
         }
 
-        // Obtener el proveedor del producto (puede ser null)
-        Proveedor proveedor = producto.getProveedor();
+        // Obtener el proveedor: usar el proveedorId del request o el primer proveedor del producto
+        Proveedor proveedor = null;
+        if (request.getProveedorId() != null) {
+            // Buscar proveedor por ID del request
+            proveedor = producto.getProductoProveedores().stream()
+                .map(pp -> pp.getProveedor())
+                .filter(p -> p.getId().equals(request.getProveedorId()))
+                .findFirst()
+                .orElse(null);
+        } else if (!producto.getProductoProveedores().isEmpty()) {
+            // Tomar el primer proveedor si no se especificó uno
+            proveedor = producto.getProductoProveedores().get(0).getProveedor();
+        }
 
         // Guardar los códigos de stock para identificar los stocks creados después
         List<String> codigosStock = new ArrayList<>();

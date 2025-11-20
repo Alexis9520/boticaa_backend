@@ -67,9 +67,10 @@ public interface ProductoRepository extends JpaRepository<Producto, Long> {
     @Query("SELECT p FROM Producto p LEFT JOIN FETCH p.stocks WHERE p.id = :id")
     Optional<Producto> findByIdWithStocks(@Param("id") Long id);
 
-    // Find products by supplier
-    @Query("SELECT p FROM Producto p WHERE p.proveedor.id = :proveedorId AND p.activo = true")
-    List<Producto> findByProveedorIdAndActivoTrue(@Param("proveedorId") Long proveedorId);
+    // Find products by supplier - DEPRECATED: Now using ProductoProveedor intermediate table
+    // Use ProductoProveedorRepository.findByProveedorId() instead
+    // @Query("SELECT p FROM Producto p WHERE p.proveedor.id = :proveedorId AND p.activo = true")
+    // List<Producto> findByProveedorIdAndActivoTrue(@Param("proveedorId") Long proveedorId);
 
     // Find products created within a date range
     @Query("SELECT p FROM Producto p WHERE p.fechaCreacion BETWEEN :fechaInicio AND :fechaFin AND p.activo = true")

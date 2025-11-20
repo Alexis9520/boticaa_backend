@@ -16,8 +16,10 @@ import quantify.BoticaSaid.model.Stock;
 import quantify.BoticaSaid.repository.StockRepository;
 import quantify.BoticaSaid.repository.ProveedorRepository;
 import quantify.BoticaSaid.repository.ProductoRepository;
+import quantify.BoticaSaid.repository.ProductoProveedorRepository;
 import quantify.BoticaSaid.model.Proveedor;
 import quantify.BoticaSaid.model.Producto;
+import quantify.BoticaSaid.model.ProductoProveedor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.jdbc.core.JdbcTemplate;
@@ -49,6 +51,9 @@ public class ReportsService {
 
     @Autowired
     private ProductoRepository productoRepository;
+
+    @Autowired
+    private ProductoProveedorRepository productoProveedorRepository;
 
     public ReportsService(JdbcTemplate jdbc) {
         this.jdbc = jdbc;
@@ -709,7 +714,11 @@ public class ReportsService {
         
         return proveedores.stream()
                 .map(proveedor -> {
-                    List<Producto> productos = productoRepository.findByProveedorIdAndActivoTrue(proveedor.getId());
+                    // Obtener productos a través de la tabla intermedia
+                    List<Producto> productos = productoProveedorRepository.findByProveedorId(proveedor.getId()).stream()
+                            .map(ProductoProveedor::getProducto)
+                            .filter(Producto::isActivo)
+                            .collect(Collectors.toList());
                     
                     List<ProveedorReportDTO.ProductoProveedorDTO> productosDTO = productos.stream()
                             .map(p -> new ProveedorReportDTO.ProductoProveedorDTO(

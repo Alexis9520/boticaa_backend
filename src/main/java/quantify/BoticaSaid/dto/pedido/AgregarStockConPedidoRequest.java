@@ -14,6 +14,8 @@ public class AgregarStockConPedidoRequest {
     
     @JsonFormat(pattern = "yyyy-MM-dd")
     private LocalDate fechaDePedido;
+    
+    private Long proveedorId;
 
     // Constructor vacío
     public AgregarStockConPedidoRequest() {}
@@ -33,5 +35,13 @@ public class AgregarStockConPedidoRequest {
 
     public void setFechaDePedido(LocalDate fechaDePedido) {
         this.fechaDePedido = fechaDePedido;
+    }
+
+    public Long getProveedorId() {
+        return proveedorId;
+    }
+
+    public void setProveedorId(Long proveedorId) {
+        this.proveedorId = proveedorId;
     }
 }
