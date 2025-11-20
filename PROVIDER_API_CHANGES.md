@@ -3,6 +3,12 @@
 ## Overview
 Se ha implementado soporte para proveedores (suppliers) con una relación muchos-a-muchos con productos. Ahora cada producto puede tener múltiples proveedores asociados.
 
+Este cambio permite:
+- Registrar múltiples proveedores en el sistema
+- Asociar varios proveedores a cada producto
+- Mantener un registro del precio de compra por proveedor
+- Marcar un proveedor como principal para cada producto
+
 ## Nuevos Endpoints de Proveedores
 
 ### 1. Crear Proveedor
