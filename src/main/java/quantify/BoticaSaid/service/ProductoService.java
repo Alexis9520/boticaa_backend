@@ -15,6 +15,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.data.domain.Pageable;
 
+import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.*;
 import java.util.stream.Collectors;
@@ -22,9 +23,12 @@ import java.util.stream.Collectors;
 import quantify.BoticaSaid.repository.StockRepository;
 import quantify.BoticaSaid.repository.ProveedorRepository;
 import quantify.BoticaSaid.repository.ProductoProveedorRepository;
+import quantify.BoticaSaid.repository.PedidoRepository;
 import quantify.BoticaSaid.model.Proveedor;
 import quantify.BoticaSaid.model.ProductoProveedor;
 import quantify.BoticaSaid.dto.producto.ProveedorSimpleDTO;
+import quantify.BoticaSaid.dto.producto.ProductoPrecioComparacionResponse;
+import quantify.BoticaSaid.dto.producto.ProductoPrecioComparacionResponse.ProveedorPrecioDetalleDTO;
 
 @Service
 public class ProductoService {
@@ -41,13 +45,17 @@ public class ProductoService {
     @Autowired
     private ProductoProveedorRepository productoProveedorRepository;
 
+    @Autowired
+    private PedidoRepository pedidoRepository;
+
     /**
-     * Crear producto con stock.
+     * Crear producto SIN stock.
      * Sólo el nombre es obligatorio.
-     * Se mantiene la lógica de reactivación si existe el código de barras y está inactivo.
+     * Se mantiene la lógica de reactivación si existe el código de barras y está
+     * inactivo.
      */
     @Transactional
-    public Object crearProductoConStock(ProductoRequest request) {
+    public Object crearProducto(ProductoRequest request) {
 
         // Validar único campo obligatorio
         if (request.getNombre() == null || request.getNombre().trim().isEmpty()) {
@@ -56,7 +64,6 @@ public class ProductoService {
 
         System.out.println("=== CREANDO PRODUCTO ===");
         System.out.println("Código de barras: " + request.getCodigoBarras());
-        System.out.println("Stocks recibidos: " + (request.getStocks() != null ? request.getStocks().size() : 0));
 
         // Buscar por código de barras sólo si vino un valor (puede ser null)
         Producto existente = (request.getCodigoBarras() != null && !request.getCodigoBarras().isBlank())
@@ -70,7 +77,8 @@ public class ProductoService {
                 existente.setNombre(request.getNombre());
                 existente.setCodigoBarras(request.getCodigoBarras());
                 existente.setConcentracion(request.getConcentracion());
-                existente.setCantidadGeneral(request.getCantidadGeneral()); // Se recalculará si hay stocks
+                // existente.setCantidadGeneral(request.getCantidadGeneral()); // No tocamos
+                // cantidad general en reactivación simple
                 existente.setPrecioVentaUnd(request.getPrecioVentaUnd());
                 existente.setDescuento(request.getDescuento());
                 existente.setLaboratorio(request.getLaboratorio());
@@ -86,28 +94,11 @@ public class ProductoService {
                 sincronizarProveedores(existente, request);
 
                 // Limpiar stocks anteriores (orphanRemoval activo)
-                existente.getStocks().clear();
+                // existente.getStocks().clear(); // No tocamos stocks
 
-                int acumulador = 0;
-                if (request.getStocks() != null && !request.getStocks().isEmpty()) {
-                    for (var stockReq : request.getStocks()) {
-                        Stock stock = new Stock();
-                        stock.setCodigoStock(stockReq.getCodigoStock());
-                        int cant = stockReq.getCantidadUnidades(); // int
-                        acumulador += cant;
-                        stock.setCantidadUnidades(cant);
-                        stock.setCantidadInicial(cant); // Set initial quantity
-                        stock.setFechaVencimiento(stockReq.getFechaVencimiento());
-                        stock.setPrecioCompra(stockReq.getPrecioCompra());
-                        stock.setProducto(existente);
-                        existente.getStocks().add(stock);
-                    }
-                    existente.setCantidadGeneral(acumulador);
-                } else {
-                    // Si no hay stocks y no se mandó cantidadGeneral -> poner 0
-                    if (existente.getCantidadGeneral() == null) {
-                        existente.setCantidadGeneral(0);
-                    }
+                // Si no hay stocks y no se mandó cantidadGeneral -> poner 0
+                if (existente.getCantidadGeneral() == null) {
+                    existente.setCantidadGeneral(0);
                 }
 
                 Producto guardado = productoRepository.save(existente);
@@ -140,25 +131,8 @@ public class ProductoService {
         // Sincronizar proveedores (nueva funcionalidad con múltiples proveedores)
         sincronizarProveedores(producto, request);
 
-        int acumuladorPadre = 0;
-        if (request.getStocks() != null && !request.getStocks().isEmpty()) {
-            for (var stockReq : request.getStocks()) {
-                Stock stock = new Stock();
-                stock.setCodigoStock(stockReq.getCodigoStock());
-                int cant = stockReq.getCantidadUnidades(); // int
-                acumuladorPadre += cant;
-                stock.setCantidadUnidades(cant);
-                stock.setCantidadInicial(cant); // Set initial quantity
-                stock.setFechaVencimiento(stockReq.getFechaVencimiento());
-                stock.setPrecioCompra(stockReq.getPrecioCompra());
-                stock.setProducto(producto);
-                producto.getStocks().add(stock);
-            }
-            producto.setCantidadGeneral(acumuladorPadre);
-        } else {
-            // Si no hay stocks: usar lo que vino en el request o 0
-            producto.setCantidadGeneral(request.getCantidadGeneral() != null ? request.getCantidadGeneral() : 0);
-        }
+        // Si no hay stocks: usar lo que vino en el request o 0
+        producto.setCantidadGeneral(request.getCantidadGeneral() != null ? request.getCantidadGeneral() : 0);
 
         Producto guardado = productoRepository.save(producto);
         return guardado;
@@ -176,7 +150,8 @@ public class ProductoService {
 
     // Buscar producto por código de barras con stocks
     public Producto buscarPorCodigoBarras(String codigoBarras) {
-        if (codigoBarras == null || codigoBarras.isBlank()) return null;
+        if (codigoBarras == null || codigoBarras.isBlank())
+            return null;
         Optional<Producto> prodOpt = productoRepository.findByCodigoBarrasWithStocks(codigoBarras);
         if (prodOpt.isPresent() && prodOpt.get().isActivo()) {
             return prodOpt.get();
@@ -291,7 +266,8 @@ public class ProductoService {
             return filtrarPorNombreCategoria(todosConStocks, nombre, categoria);
         } catch (Exception e) {
             if (nombre != null && categoria != null) {
-                return productoRepository.findByNombreContainingIgnoreCaseAndCategoriaContainingIgnoreCaseAndActivoTrue(nombre, categoria);
+                return productoRepository.findByNombreContainingIgnoreCaseAndCategoriaContainingIgnoreCaseAndActivoTrue(
+                        nombre, categoria);
             } else if (nombre != null) {
                 return productoRepository.findByNombreContainingIgnoreCaseAndActivoTrue(nombre);
             } else if (categoria != null) {
@@ -336,7 +312,8 @@ public class ProductoService {
     @Transactional
     @Deprecated
     public boolean eliminarPorCodigoBarras(String codigoBarras) {
-        if (codigoBarras == null || codigoBarras.isBlank()) return false;
+        if (codigoBarras == null || codigoBarras.isBlank())
+            return false;
         Producto producto = productoRepository.findByCodigoBarras(codigoBarras);
         if (producto != null && producto.isActivo()) {
             producto.setActivo(false);
@@ -357,7 +334,7 @@ public class ProductoService {
         Producto producto = prodOpt.orElseGet(() -> productoRepository.findByCodigoBarras(codigoBarras));
 
         if (producto != null && producto.isActivo()) {
-            aplicarDatosProductoDesdeRequest(producto, request, true);
+            aplicarDatosProductoDesdeRequest(producto, request);
             Producto guardado = productoRepository.save(producto);
             return productoRepository.findByCodigoBarrasWithStocks(codigoBarras).orElse(guardado);
         }
@@ -374,7 +351,7 @@ public class ProductoService {
             throw new IllegalArgumentException("No se puede actualizar un producto inactivo");
         }
 
-        aplicarDatosProductoDesdeRequest(producto, request, true);
+        aplicarDatosProductoDesdeRequest(producto, request);
 
         Producto guardado = productoRepository.save(producto);
         return productoRepository.findByIdWithStocks(guardado.getId()).orElse(guardado);
@@ -382,10 +359,9 @@ public class ProductoService {
 
     /**
      * Aplica los datos del request al producto.
-     * Si replaceStocks = true, limpia y recrea stocks.
-     * Recalcula cantidadGeneral si hay stocks nuevos; de lo contrario toma valor del request (o conserva si ambos null).
+     * NO toca stocks.
      */
-    private void aplicarDatosProductoDesdeRequest(Producto producto, ProductoRequest request, boolean replaceStocks) {
+    private void aplicarDatosProductoDesdeRequest(Producto producto, ProductoRequest request) {
         // Sólo el nombre es obligatorio; validamos si se pretende cambiarlo.
         if (request.getNombre() == null || request.getNombre().trim().isEmpty()) {
             throw new IllegalArgumentException("El nombre del producto es obligatorio.");
@@ -408,38 +384,11 @@ public class ProductoService {
         // Sincronizar proveedores (nueva funcionalidad con múltiples proveedores)
         sincronizarProveedores(producto, request);
 
-        if (replaceStocks) {
-            producto.getStocks().clear();
-            int acumulador = 0;
-            if (request.getStocks() != null && !request.getStocks().isEmpty()) {
-                for (var stockReq : request.getStocks()) {
-                    Stock stock = new Stock();
-                    stock.setCodigoStock(stockReq.getCodigoStock());
-                    int cant = stockReq.getCantidadUnidades(); // int
-                    acumulador += cant;
-                    stock.setCantidadUnidades(cant);
-                    stock.setCantidadInicial(cant); // Set initial quantity
-                    stock.setFechaVencimiento(stockReq.getFechaVencimiento());
-                    stock.setPrecioCompra(stockReq.getPrecioCompra());
-                    stock.setProducto(producto);
-                    producto.getStocks().add(stock);
-                }
-                producto.setCantidadGeneral(acumulador);
-            } else {
-                // Si no hay stocks nuevos: usar valor del request o conservar el existente
-                if (request.getCantidadGeneral() != null) {
-                    producto.setCantidadGeneral(request.getCantidadGeneral());
-                } else if (producto.getCantidadGeneral() == null) {
-                    producto.setCantidadGeneral(0);
-                }
-            }
-        } else {
-            // No se reemplazan stocks: sólo ajustar cantidadGeneral si vino explícita
-            if (request.getCantidadGeneral() != null) {
-                producto.setCantidadGeneral(request.getCantidadGeneral());
-            } else if (producto.getCantidadGeneral() == null) {
-                producto.setCantidadGeneral(0);
-            }
+        // No se reemplazan stocks: sólo ajustar cantidadGeneral si vino explícita
+        if (request.getCantidadGeneral() != null) {
+            producto.setCantidadGeneral(request.getCantidadGeneral());
+        } else if (producto.getCantidadGeneral() == null) {
+            producto.setCantidadGeneral(0);
         }
     }
 
@@ -458,8 +407,10 @@ public class ProductoService {
         }
     }
 
+    // language: java
     public StockLoteDTO toStockLoteDTO(Stock stock) {
         StockLoteDTO dto = new StockLoteDTO();
+        dto.setId(stock.getId());                      // <- agregar esta línea
         dto.setCodigoStock(stock.getCodigoStock());
         dto.setCantidadUnidades(stock.getCantidadUnidades());
         dto.setFechaVencimiento(stock.getFechaVencimiento());
@@ -491,21 +442,20 @@ public class ProductoService {
                     .map(pp -> {
                         Proveedor prov = pp.getProveedor();
                         return new ProveedorSimpleDTO(
-                            prov.getId(),
-                            prov.getRazonComercial(),
-                            prov.getRuc()
-                        );
+                                prov.getId(),
+                                prov.getRazonComercial(),
+                                prov.getRuc());
                     })
                     .collect(Collectors.toList());
             resp.setProveedores(proveedoresList);
-            
+
             // Mantener compatibilidad: establecer primer proveedor en campos legacy
             if (!proveedoresList.isEmpty()) {
                 ProveedorSimpleDTO primerProveedor = proveedoresList.get(0);
                 resp.setProveedorId(primerProveedor.getId());
-                resp.setProveedorNombre(primerProveedor.getRazonComercial() != null 
-                    ? primerProveedor.getRazonComercial() 
-                    : primerProveedor.getRuc());
+                resp.setProveedorNombre(primerProveedor.getRazonComercial() != null
+                        ? primerProveedor.getRazonComercial()
+                        : primerProveedor.getRuc());
             }
         } else {
             resp.setProveedores(new ArrayList<>());
@@ -515,8 +465,7 @@ public class ProductoService {
             resp.setStocks(
                     producto.getStocks().stream()
                             .map(this::toStockLoteDTO)
-                            .collect(Collectors.toList())
-            );
+                            .collect(Collectors.toList()));
         } else {
             resp.setStocks(new ArrayList<>());
         }
@@ -564,8 +513,7 @@ public class ProductoService {
                             long dias = java.time.temporal.ChronoUnit.DAYS.between(hoy, stock.getFechaVencimiento());
                             dto.dias = (int) dias;
                             return dto;
-                        })
-                )
+                        }))
                 .sorted(Comparator.comparingInt(dto -> dto.dias))
                 .collect(Collectors.toList());
     }
@@ -576,7 +524,8 @@ public class ProductoService {
         Page<Producto> paged = productoRepository.findByActivoTrue(pageable);
         List<Producto> productos = paged.getContent();
         productos.forEach(p -> {
-            if (p.getStocks() != null) p.getStocks().size();
+            if (p.getStocks() != null)
+                p.getStocks().size();
         });
         return productos;
     }
@@ -589,7 +538,8 @@ public class ProductoService {
     // Búsqueda paginada con filtros
     public Page<Producto> buscarPaginadoPorQuery(String q, String lab, String cat, Pageable pageable) {
         Page<Producto> paged;
-        boolean anyFilter = (q != null && !q.trim().isEmpty()) || (lab != null && !lab.isBlank()) || (cat != null && !cat.isBlank());
+        boolean anyFilter = (q != null && !q.trim().isEmpty()) || (lab != null && !lab.isBlank())
+                || (cat != null && !cat.isBlank());
         if (!anyFilter) {
             paged = productoRepository.findByActivoTrue(pageable);
         } else {
@@ -597,13 +547,13 @@ public class ProductoService {
                     q == null ? null : q.trim(),
                     lab == null ? null : lab.trim(),
                     cat == null ? null : cat.trim(),
-                    pageable
-            );
+                    pageable);
         }
 
         // Forzar carga de stocks
         paged.getContent().forEach(p -> {
-            if (p.getStocks() != null) p.getStocks().size();
+            if (p.getStocks() != null)
+                p.getStocks().size();
         });
 
         return paged;
@@ -618,7 +568,7 @@ public class ProductoService {
                 .collect(Collectors.toList());
     }
 
-    // Buscar productos por categoría con stocks
+    // Buscar productos por categoría with stocks
     public List<Producto> buscarPorCategoria(String categoria) {
         if (categoria == null || categoria.isBlank()) {
             return new ArrayList<>();
@@ -628,25 +578,26 @@ public class ProductoService {
 
     /**
      * Método auxiliar para sincronizar proveedores de un producto.
-     * Acepta tanto proveedorId (compatibilidad) como proveedorIds (nueva funcionalidad).
+     * Acepta tanto proveedorId (compatibilidad) como proveedorIds (nueva
+     * funcionalidad).
      */
     private void sincronizarProveedores(Producto producto, ProductoRequest request) {
         // Limpiar relaciones actuales
         producto.getProductoProveedores().clear();
-        
+
         // Recolectar IDs de proveedores desde ambas fuentes
         Set<Long> proveedorIdsSet = new HashSet<>();
-        
+
         // Agregar proveedorId individual si existe (compatibilidad con frontend)
         if (request.getProveedorId() != null) {
             proveedorIdsSet.add(request.getProveedorId());
         }
-        
+
         // Agregar proveedorIds lista si existe
         if (request.getProveedorIds() != null && !request.getProveedorIds().isEmpty()) {
             proveedorIdsSet.addAll(request.getProveedorIds());
         }
-        
+
         // Crear relaciones con proveedores activos
         for (Long proveedorId : proveedorIdsSet) {
             Optional<Proveedor> proveedorOpt = proveedorRepository.findById(proveedorId);
@@ -656,4 +607,39 @@ public class ProductoService {
             }
         }
     }
+
+    public ProductoPrecioComparacionResponse obtenerComparativaPrecios(Long productoId) {
+        Producto producto = buscarPorId(productoId);
+        if (producto == null) {
+            return null;
+        }
+
+        ProductoPrecioComparacionResponse response = new ProductoPrecioComparacionResponse();
+        response.setProductoId(producto.getId());
+        response.setNombreProducto(producto.getNombre());
+        response.setCodigoBarras(producto.getCodigoBarras());
+
+        List<Object[]> raw = pedidoRepository.resumenPreciosPorProducto(productoId);
+        if (raw.isEmpty()) {
+            response.setProveedores(List.of());
+            return response;
+        }
+
+        List<ProveedorPrecioDetalleDTO> proveedores = raw.stream().map(row -> {
+            ProveedorPrecioDetalleDTO dto = new ProveedorPrecioDetalleDTO();
+            dto.setProveedorId(((Number) row[0]).longValue());
+            dto.setProveedorNombre((String) row[1]);
+            dto.setProveedorRuc((String) row[2]);
+            dto.setTotalPedidos(((Number) row[3]).intValue());
+            LocalDate fechaUltima = (LocalDate) row[4];
+            dto.setFechaUltimoPedido(fechaUltima != null ? fechaUltima.toString() : null);
+            dto.setPrecioPromedio(row[5] != null ? new BigDecimal(row[5].toString()) : null);
+            dto.setUltimoPrecio(pedidoRepository.findUltimoPrecio(productoId, dto.getProveedorId()));
+            return dto;
+        }).toList();
+
+        response.setProveedores(proveedores);
+        return response;
+    }
 }
+

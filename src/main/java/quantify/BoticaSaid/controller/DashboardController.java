@@ -10,6 +10,7 @@ import quantify.BoticaSaid.dto.venta.VentasPorHoraDTO;
 import quantify.BoticaSaid.service.CajaService;
 import quantify.BoticaSaid.service.ProductoService;
 import quantify.BoticaSaid.service.VentaService;
+import quantify.BoticaSaid.service.PedidoService;
 
 import java.util.List;
 
@@ -23,6 +24,9 @@ public class DashboardController {
     private CajaService cajaService;
     @Autowired
     private ProductoService productoService;
+
+    @Autowired
+    private PedidoService pedidoService;
 
     // Solo ADMINISTRADOR puede acceder a este endpoint
     @PreAuthorize("hasRole('ADMINISTRADOR')")
@@ -62,6 +66,9 @@ public class DashboardController {
 
         // Productos próximos a vencer
         resumen.productosVencimiento = productoService.getProductosPorVencerDTO();
+
+        resumen.pedidos = pedidoService.buildPedidosMetricas();
+        resumen.proveedores = pedidoService.buildProveedoresMetricas();
 
         return resumen;
     }

@@ -457,16 +457,16 @@ public class ReportsController {
         }
     }
 
-/**
     // ===== Reportes de Lotes agregados por rango de fechas (Excel) =====
     @GetMapping(value = "/lotes", produces = MediaType.APPLICATION_OCTET_STREAM_VALUE)
     public void reporteLotesExcel(
             @RequestParam String fechaInicio,
             @RequestParam String fechaFin,
+            @RequestParam(required = false) String proveedorID,
             HttpServletResponse res) throws Exception {
 
         try {
-            var lotes = svc.getLotesReportByDateRange(fechaInicio, fechaFin);
+            var lotes = svc.getLotesReportByDateRange(fechaInicio, fechaFin, proveedorID);
             setDownloadHeaders(res, "lotes_" + fechaInicio + "_" + fechaFin + ".xlsx");
 
             try (SXSSFWorkbook wb = new SXSSFWorkbook(200)) {
@@ -529,7 +529,6 @@ public class ReportsController {
             res.getWriter().write("{\"error\": \"" + e.getMessage() + "\"}");
         }
     }
-*/
     // ===== Reporte de Proveedores con su lista de productos =====
     @GetMapping("/proveedores")
     public org.springframework.http.ResponseEntity<?> reporteProveedores() {

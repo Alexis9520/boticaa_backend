@@ -11,6 +11,8 @@ public class DashboardResumenDTO {
     public List<ProductoMasVendidoDTO> productosMasVendidos;
     public List<ProductoCriticoDTO> productosCriticos;
     public List<ProductoVencimientoDTO> productosVencimiento;
+    public PedidosMetricasDTO pedidos;
+    public ProveedoresMetricasDTO proveedores;
 
     // DTO para Ventas del Día
     public static class VentasDiaDTO {
@@ -61,5 +63,43 @@ public class DashboardResumenDTO {
     public static class ProductoVencimientoDTO {
         public String nombre;
         public int dias;
+    }
+
+    public static class PedidosMetricasDTO {
+        public long totalHoy;
+        public long totalMes;
+        public double variacionMes;
+        public double leadTimePromedioDias;
+        public List<SerieTemporalDTO> serieUltimosDias;
+        public List<PedidoDetalleDTO> pedidosRecientes;
+    }
+
+    public static class SerieTemporalDTO {
+        public String etiqueta;
+        public long total;
+    }
+
+    public static class PedidoDetalleDTO {
+        public Long pedidoId;
+        public String proveedor;
+        public String producto;
+        public String fechaPedido;
+        public Integer unidades;
+        public Integer leadTimeDias;
+    }
+
+    public static class ProveedoresMetricasDTO {
+        public long activos;
+        public long conPedidos30Dias;
+        public long sinPedidos90Dias;
+        public double leadTimePromedioDias;
+        public List<ProveedorRankingDTO> topProveedores;
+    }
+
+    public static class ProveedorRankingDTO {
+        public Long proveedorId;
+        public String nombre;
+        public long pedidos;
+        public double leadTimePromedioDias;
     }
 }

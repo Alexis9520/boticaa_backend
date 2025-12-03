@@ -1,7 +1,6 @@
 package quantify.BoticaSaid.dto.producto;
 
 import jakarta.validation.constraints.NotBlank;
-import quantify.BoticaSaid.dto.stock.StockRequest;
 
 import java.math.BigDecimal;
 import java.util.List;
@@ -39,8 +38,6 @@ public class ProductoRequest {
 
     // Nueva lista de proveedores
     private List<Long> proveedorIds;
-
-    private List<StockRequest> stocks;
 
     // Getters y setters
 
@@ -162,14 +159,6 @@ public class ProductoRequest {
 
     public void setPresentacion(String presentacion) {
         this.presentacion = presentacion;
-    }
-
-    public List<StockRequest> getStocks() {
-        return stocks;
-    }
-
-    public void setStocks(List<StockRequest> stocks) {
-        this.stocks = stocks;
     }
 
     public Long getProveedorId() {

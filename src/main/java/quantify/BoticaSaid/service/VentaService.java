@@ -32,13 +32,13 @@ public class VentaService {
     private final MovimientoEfectivoRepository movimientoEfectivoRepository;
 
     public VentaService(ProductoRepository productoRepository,
-                        BoletaRepository boletaRepository,
-                        DetalleBoletaRepository detalleBoletaRepository,
-                        MetodoPagoRepository metodoPagoRepository,
-                        StockRepository stockRepository,
-                        UsuarioRepository usuarioRepository,
-                        CajaRepository cajaRepository,
-                        MovimientoEfectivoRepository movimientoEfectivoRepository) {
+            BoletaRepository boletaRepository,
+            DetalleBoletaRepository detalleBoletaRepository,
+            MetodoPagoRepository metodoPagoRepository,
+            StockRepository stockRepository,
+            UsuarioRepository usuarioRepository,
+            CajaRepository cajaRepository,
+            MovimientoEfectivoRepository movimientoEfectivoRepository) {
         this.productoRepository = productoRepository;
         this.boletaRepository = boletaRepository;
         this.detalleBoletaRepository = detalleBoletaRepository;
@@ -60,24 +60,24 @@ public class VentaService {
     // Helper method to find product by ID or barcode
     private Producto buscarProductoPorIdOCodigoBarras(DetalleProductoDTO item) {
         Producto producto = null;
-        
+
         // Intentar buscar por ID primero
         if (item.getId() != null) {
             producto = productoRepository.findById(item.getId()).orElse(null);
         }
-        
+
         // Si no se encontró por ID, buscar por código de barras
         if (producto == null && item.getCodBarras() != null) {
             producto = productoRepository.findByCodigoBarras(item.getCodBarras());
         }
-        
+
         if (producto == null) {
-            String identifier = item.getId() != null 
-                ? "ID: " + item.getId() 
-                : "Código de barras: " + item.getCodBarras();
+            String identifier = item.getId() != null
+                    ? "ID: " + item.getId()
+                    : "Código de barras: " + item.getCodBarras();
             throw new RuntimeException("Producto no encontrado: " + identifier);
         }
-        
+
         return producto;
     }
 
@@ -91,29 +91,33 @@ public class VentaService {
                 .orElseThrow(() -> new RuntimeException("No hay una caja abierta para este usuario"));
 
         MetodoPago.NombreMetodo nombreMetodo = MetodoPago.NombreMetodo.valueOf(
-                ventaDTO.getMetodoPago().getNombre().toUpperCase()
-        );
+                ventaDTO.getMetodoPago().getNombre().toUpperCase());
 
         double efectivo = ventaDTO.getMetodoPago().getEfectivo() != null ? ventaDTO.getMetodoPago().getEfectivo() : 0.0;
         double digital = ventaDTO.getMetodoPago().getDigital() != null ? ventaDTO.getMetodoPago().getDigital() : 0.0;
-        double efectivoFix = ventaDTO.getMetodoPago().getEfectivoFix() != null ? ventaDTO.getMetodoPago().getEfectivoFix() : 0.0;
+        double efectivoFix = ventaDTO.getMetodoPago().getEfectivoFix() != null
+                ? ventaDTO.getMetodoPago().getEfectivoFix()
+                : 0.0;
 
         double ingresoTotal = efectivo + digital;
 
         for (DetalleProductoDTO producto : ventaDTO.getProductos()) {
             if (producto.getCantidad() <= 0) {
-                String identifier = producto.getId() != null 
-                    ? "ID: " + producto.getId() 
-                    : "Código de barras: " + producto.getCodBarras();
-                throw new RuntimeException("No se puede vender cantidades iguales o menores a cero para el producto con " + identifier);
+                String identifier = producto.getId() != null
+                        ? "ID: " + producto.getId()
+                        : "Código de barras: " + producto.getCodBarras();
+                throw new RuntimeException(
+                        "No se puede vender cantidades iguales o menores a cero para el producto con " + identifier);
             }
         }
         BigDecimal totalVentaCalculado = BigDecimal.ZERO;
 
-        //Calcular el total real de la venta antes de continuar
+        // Calcular el total real de la venta antes de continuar
         for (DetalleProductoDTO item : ventaDTO.getProductos()) {
             Producto producto = buscarProductoPorIdOCodigoBarras(item);
-            int unidadesPorBlister = producto.getCantidadUnidadesBlister() != null ? producto.getCantidadUnidadesBlister() : 0;
+            int unidadesPorBlister = producto.getCantidadUnidadesBlister() != null
+                    ? producto.getCantidadUnidadesBlister()
+                    : 0;
             BigDecimal precioBlister = producto.getPrecioVentaBlister();
             BigDecimal precioUnidad = producto.getPrecioVentaUnd();
 
@@ -126,11 +130,12 @@ public class VentaService {
             }
 
             totalVentaCalculado = totalVentaCalculado
-                    .add(precioBlister != null ? precioBlister.multiply(BigDecimal.valueOf(cantidadBlisters)) : BigDecimal.ZERO)
+                    .add(precioBlister != null ? precioBlister.multiply(BigDecimal.valueOf(cantidadBlisters))
+                            : BigDecimal.ZERO)
                     .add(precioUnidad.multiply(BigDecimal.valueOf(unidadesSueltas)));
         }
 
-        //Validar que la suma del pago sea suficiente
+        // Validar que la suma del pago sea suficiente
         if (BigDecimal.valueOf(ingresoTotal).compareTo(totalVentaCalculado) < 0) {
             throw new RuntimeException("El monto pagado (" + ingresoTotal +
                     ") es insuficiente para cubrir el total de la venta (" + totalVentaCalculado + ").");
@@ -161,10 +166,11 @@ public class VentaService {
             int cantidadSolicitada = item.getCantidad();
 
             if (cantidadSolicitada <= 0) {
-                String identifier = item.getId() != null 
-                    ? "ID: " + item.getId() 
-                    : "Código de barras: " + item.getCodBarras();
-                throw new RuntimeException("No se puede vender cantidades iguales o menores a cero para el producto con " + identifier);
+                String identifier = item.getId() != null
+                        ? "ID: " + item.getId()
+                        : "Código de barras: " + item.getCodBarras();
+                throw new RuntimeException(
+                        "No se puede vender cantidades iguales o menores a cero para el producto con " + identifier);
             }
 
             Producto producto = buscarProductoPorIdOCodigoBarras(item);
@@ -178,7 +184,8 @@ public class VentaService {
             int cantidadBlisters = 0;
             int unidadesSueltas = cantidadSolicitada;
 
-            if (unidadesPorBlister != null && unidadesPorBlister > 0 && precioBlister != null && precioBlister.compareTo(BigDecimal.ZERO) > 0) {
+            if (unidadesPorBlister != null && unidadesPorBlister > 0 && precioBlister != null
+                    && precioBlister.compareTo(BigDecimal.ZERO) > 0) {
                 cantidadBlisters = cantidadSolicitada / unidadesPorBlister;
                 unidadesSueltas = cantidadSolicitada % unidadesPorBlister;
             }
@@ -188,8 +195,10 @@ public class VentaService {
 
             if (cantidadBlisters > 0) {
                 for (Stock stock : stocks) {
-                    if (cantidadRestanteBlister == 0) break;
-                    if (stock.getCantidadUnidades() == 0) continue;
+                    if (cantidadRestanteBlister == 0)
+                        break;
+                    if (stock.getCantidadUnidades() == 0)
+                        continue;
                     int cantidadUsada = Math.min(stock.getCantidadUnidades(), cantidadRestanteBlister);
                     stock.setCantidadUnidades(stock.getCantidadUnidades() - cantidadUsada);
                     cantidadRestanteBlister -= cantidadUsada;
@@ -216,8 +225,10 @@ public class VentaService {
 
             int cantidadRestanteUnidad = unidadesSueltas;
             for (Stock stock : stocks) {
-                if (cantidadRestanteUnidad == 0) break;
-                if (stock.getCantidadUnidades() == 0) continue;
+                if (cantidadRestanteUnidad == 0)
+                    break;
+                if (stock.getCantidadUnidades() == 0)
+                    continue;
                 int cantidadUsada = Math.min(stock.getCantidadUnidades(), cantidadRestanteUnidad);
                 stock.setCantidadUnidades(stock.getCantidadUnidades() - cantidadUsada);
                 cantidadRestanteUnidad -= cantidadUsada;
@@ -235,9 +246,9 @@ public class VentaService {
                 }
             }
             if ((cantidadRestanteBlister > 0 && cantidadBlisters > 0) || cantidadRestanteUnidad > 0) {
-                String identifier = item.getId() != null 
-                    ? "ID: " + item.getId() 
-                    : "Código de barras: " + item.getCodBarras();
+                String identifier = item.getId() != null
+                        ? "ID: " + item.getId()
+                        : "Código de barras: " + item.getCodBarras();
                 throw new RuntimeException("Stock insuficiente para el producto con " + identifier);
             }
 
@@ -263,7 +274,6 @@ public class VentaService {
         BigDecimal efectivoRecibido = BigDecimal.valueOf(efectivoFix);
         BigDecimal digitalRecibido = BigDecimal.valueOf(digital);
 
-
         cajaAbierta.setEfectivoFinal(
                 (cajaAbierta.getEfectivoFinal() != null ? cajaAbierta.getEfectivoFinal() : BigDecimal.ZERO)
                         .add(efectivoRecibido) // Sumamos el efectivo NETO
@@ -275,7 +285,6 @@ public class VentaService {
         );
 
         cajaRepository.save(cajaAbierta);
-
 
         // Retornar la venta registrada como DTO para el frontend
         return convertirABoletaResponseDTO(boletaGuardada);
@@ -294,28 +303,28 @@ public class VentaService {
         dto.setMetodoPago(boleta.getMetodoPago() != null
                 ? boleta.getMetodoPago().getNombre().toString()
                 : null);
-        dto.setTotal(boleta.getTotalCompra() != null ? boleta.getTotalCompra().setScale(2, RoundingMode.HALF_UP) : null);
+        dto.setTotal(
+                boleta.getTotalCompra() != null ? boleta.getTotalCompra().setScale(2, RoundingMode.HALF_UP) : null);
         dto.setUsuario(boleta.getUsuario() != null ? boleta.getUsuario().getNombreCompleto() : null);
 
         List<DetalleProductoDTO> productos = boleta.getDetalles() != null
                 ? boleta.getDetalles().stream().map(detalle -> {
-            DetalleProductoDTO prodDto = new DetalleProductoDTO();
-            prodDto.setCodBarras(detalle.getProducto().getCodigoBarras());
-            prodDto.setNombre(detalle.getProducto().getNombre());
-            prodDto.setCantidad(detalle.getCantidad());
+                    DetalleProductoDTO prodDto = new DetalleProductoDTO();
 
-            String codigoBarras = detalle.getProducto().getCodigoBarras() != null ? detalle.getProducto().getCodigoBarras() : "";
-            Producto producto = productoRepository.findByCodigoBarras(codigoBarras);
+                    if (detalle.getProducto() != null) {
+                        prodDto.setId(detalle.getProducto().getId());
+                        prodDto.setCodBarras(detalle.getProducto().getCodigoBarras());
+                        prodDto.setNombre(detalle.getProducto().getNombre());
 
-            if (producto != null) {
-                BigDecimal precio = producto.getPrecioVentaUnd();
-                prodDto.setPrecio(precio != null ? precio.setScale(2, RoundingMode.HALF_UP) : null);
-            } else {
-                throw new RuntimeException("Producto no encontrado: " + codigoBarras);
-            }
+                        // Usamos el precio del producto actual para mantener consistencia con la lógica
+                        // anterior
+                        BigDecimal precio = detalle.getProducto().getPrecioVentaUnd();
+                        prodDto.setPrecio(precio != null ? precio.setScale(2, RoundingMode.HALF_UP) : null);
+                    }
 
-            return prodDto;
-        }).collect(Collectors.toList())
+                    prodDto.setCantidad(detalle.getCantidad());
+                    return prodDto;
+                }).collect(Collectors.toList())
                 : List.of();
         dto.setProductos(productos);
 
@@ -344,13 +353,15 @@ public class VentaService {
         double ventasAyer = boletaRepository.sumTotalCompraByFechaVentaBetween(inicioAyer, finAyer).orElse(0.0);
         double ventasHoy = boletaRepository.sumTotalCompraByFechaVentaAfter(inicioHoy).orElse(0.0);
 
-        if (ventasAyer == 0) return ventasHoy > 0 ? 100.0 : 0.0;
+        if (ventasAyer == 0)
+            return ventasHoy > 0 ? 100.0 : 0.0;
         return ((ventasHoy - ventasAyer) / ventasAyer) * 100.0;
     }
 
     // Ventas del mes
     public double getVentasDelMes() {
-        LocalDateTime inicioMes = LocalDateTime.now(ZoneId.of("America/Lima")).withDayOfMonth(1).toLocalDate().atStartOfDay();
+        LocalDateTime inicioMes = LocalDateTime.now(ZoneId.of("America/Lima")).withDayOfMonth(1).toLocalDate()
+                .atStartOfDay();
         return boletaRepository.sumTotalCompraByFechaVentaAfter(inicioMes).orElse(0.0);
     }
 
@@ -361,10 +372,12 @@ public class VentaService {
         LocalDateTime inicioMesAnterior = inicioMesActual.minusMonths(1);
         LocalDateTime finMesAnterior = inicioMesActual.minusSeconds(1);
 
-        double ventasMesAnterior = boletaRepository.sumTotalCompraByFechaVentaBetween(inicioMesAnterior, finMesAnterior).orElse(0.0);
+        double ventasMesAnterior = boletaRepository.sumTotalCompraByFechaVentaBetween(inicioMesAnterior, finMesAnterior)
+                .orElse(0.0);
         double ventasMesActual = boletaRepository.sumTotalCompraByFechaVentaAfter(inicioMesActual).orElse(0.0);
 
-        if (ventasMesAnterior == 0) return ventasMesActual > 0 ? 100.0 : 0.0;
+        if (ventasMesAnterior == 0)
+            return ventasMesActual > 0 ? 100.0 : 0.0;
         return ((ventasMesActual - ventasMesAnterior) / ventasMesAnterior) * 100.0;
     }
 
@@ -383,8 +396,9 @@ public class VentaService {
         int clientesAyer = boletaRepository.countDistinctDniClienteByFechaVentaBetween(inicioAyer, finAyer).orElse(0);
         int clientesHoy = boletaRepository.countDistinctDniClienteByFechaVentaAfter(inicioHoy).orElse(0);
 
-        if (clientesAyer == 0) return clientesHoy > 0 ? 100.0 : 0.0;
-        return ((double)(clientesHoy - clientesAyer) / clientesAyer) * 100.0;
+        if (clientesAyer == 0)
+            return clientesHoy > 0 ? 100.0 : 0.0;
+        return ((double) (clientesHoy - clientesAyer) / clientesAyer) * 100.0;
     }
 
     // Últimas ventas (puedes ajustar el límite)

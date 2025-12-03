@@ -44,9 +44,9 @@ public class BoletaController {
             @RequestParam(required = false) String search,
             @RequestParam(required = false) String q,
             @RequestParam(required = false) String from,
-            @RequestParam(required = false) String to
-    ) {
-        Pageable pageable = PageRequest.of(Math.max(0, page), Math.max(1, size), Sort.by(Sort.Direction.DESC, "fechaVenta"));
+            @RequestParam(required = false) String to) {
+        Pageable pageable = PageRequest.of(Math.max(0, page), Math.max(1, size),
+                Sort.by(Sort.Direction.DESC, "fechaVenta"));
 
         String term = (search != null && !search.isBlank()) ? search : (q != null ? q : null);
 
@@ -57,23 +57,25 @@ public class BoletaController {
             spec = spec.and((root, query, cb) -> cb.or(
                     cb.like(cb.lower(root.get("nombreCliente")), like),
                     cb.like(cb.lower(root.get("numero")), like),
-                    cb.like(cb.lower(root.get("id").as(String.class)), like)
-            ));
+                    cb.like(cb.lower(root.get("id").as(String.class)), like)));
         }
         if (from != null && !from.isBlank()) {
             try {
                 LocalDateTime fromDateTime = LocalDate.parse(from).atStartOfDay();
                 spec = spec.and((root, query, cb) -> cb.greaterThanOrEqualTo(root.get("fechaVenta"), fromDateTime));
-            } catch (Exception ignored) {}
+            } catch (Exception ignored) {
+            }
         }
         if (to != null && !to.isBlank()) {
             try {
                 LocalDateTime toDateTime = LocalDate.parse(to).atTime(LocalTime.MAX);
                 spec = spec.and((root, query, cb) -> cb.lessThanOrEqualTo(root.get("fechaVenta"), toDateTime));
-            } catch (Exception ignored) {}
+            } catch (Exception ignored) {
+            }
         }
 
-        // Precarga to-one para evitar N+1 en usuario/metodoPago. Evitamos detalles (colección) en el listado.
+        // Precarga to-one para evitar N+1 en usuario/metodoPago. Evitamos detalles
+        // (colección) en el listado.
         Page<Boleta> pageBoletas = boletaRepository.findAllWithUsuarioAndMetodo(spec, pageable);
 
         DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
@@ -89,8 +91,7 @@ public class BoletaController {
             dto.setMetodoPago(
                     (b.getMetodoPago() != null && b.getMetodoPago().getNombre() != null)
                             ? b.getMetodoPago().getNombre().toString()
-                            : ""
-            );
+                            : "");
             dto.setUsuario(b.getUsuario() != null ? b.getUsuario().getNombreCompleto() : "");
             // Listado sin productos
             return dto;
@@ -102,9 +103,7 @@ public class BoletaController {
                         pageBoletas.getTotalElements(),
                         pageBoletas.getNumber(),
                         pageBoletas.getSize(),
-                        pageBoletas.getTotalPages()
-                )
-        );
+                        pageBoletas.getTotalPages()));
     }
 
     /**
@@ -113,7 +112,8 @@ public class BoletaController {
     @GetMapping("/{id}")
     public ResponseEntity<BoletaResponseDTO> obtenerPorId(@PathVariable Integer id) {
         var opt = boletaRepository.findByIdWithDetalles(id);
-        if (opt.isEmpty()) return ResponseEntity.notFound().build();
+        if (opt.isEmpty())
+            return ResponseEntity.notFound().build();
 
         var b = opt.get();
         var fmt = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
@@ -128,21 +128,21 @@ public class BoletaController {
         dto.setMetodoPago(
                 (b.getMetodoPago() != null && b.getMetodoPago().getNombre() != null)
                         ? b.getMetodoPago().getNombre().toString()
-                        : ""
-        );
+                        : "");
         dto.setUsuario(b.getUsuario() != null ? b.getUsuario().getNombreCompleto() : "");
 
         List<DetalleProductoDTO> productos = b.getDetalles() == null ? List.of()
                 : b.getDetalles().stream().map(d -> {
-            var p = new DetalleProductoDTO();
-            if (d.getProducto() != null) {
-                p.setCodBarras(d.getProducto().getCodigoBarras());
-                p.setNombre(d.getProducto().getNombre());
-            }
-            p.setCantidad(d.getCantidad());
-            p.setPrecio(d.getPrecioUnitario());
-            return p;
-        }).toList();
+                    var p = new DetalleProductoDTO();
+                    if (d.getProducto() != null) {
+                        p.setId(d.getProducto().getId());
+                        p.setCodBarras(d.getProducto().getCodigoBarras());
+                        p.setNombre(d.getProducto().getNombre());
+                    }
+                    p.setCantidad(d.getCantidad());
+                    p.setPrecio(d.getPrecioUnitario());
+                    return p;
+                }).toList();
 
         dto.setProductos(productos);
 

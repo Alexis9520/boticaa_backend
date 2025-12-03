@@ -4,12 +4,20 @@ import java.math.BigDecimal;
 import java.time.LocalDate;
 
 public class StockLoteDTO {
+    private Integer id;
     private String codigoStock;      // <-- AGREGA ESTA LÍNEA
     private int cantidadUnidades;
     private LocalDate fechaVencimiento;
     private BigDecimal precioCompra;
 
-    // Getters y setters
+    public Integer getId() {
+        return id;
+    }
+
+    public void setId(Integer id) {
+        this.id = id;
+    }
+// Getters y setters
 
     public String getCodigoStock() {
         return codigoStock;

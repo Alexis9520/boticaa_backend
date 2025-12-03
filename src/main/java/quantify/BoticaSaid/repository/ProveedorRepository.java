@@ -12,4 +12,6 @@ public interface ProveedorRepository extends JpaRepository<Proveedor, Long> {
     List<Proveedor> findByActivoTrue();
     
     List<Proveedor> findByRucContainingIgnoreCaseOrRazonComercialContainingIgnoreCaseAndActivoTrue(String ruc, String razonComercial);
+
+    long countByActivoTrue();
 }

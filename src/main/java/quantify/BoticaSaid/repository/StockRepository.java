@@ -11,6 +11,7 @@ import quantify.BoticaSaid.model.Stock;
 import quantify.BoticaSaid.model.Producto;
 import org.springframework.data.jpa.repository.Query;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
 
@@ -36,4 +37,18 @@ public interface StockRepository extends JpaRepository<Stock, Integer>, JpaSpeci
     List<Stock> findByFechaAndProveedor(@Param("fechaInicio") LocalDateTime start,
                                         @Param("fechaFin") LocalDateTime end,
                                         @Param("proveedorId") Long proveedorId);
+
+    @Query("SELECT s FROM Stock s WHERE s.codigoStock IN :codigos AND s.producto.id = :productoId")
+    List<Stock> findByCodigoStockInAndProductoId(@Param("codigos") List<String> codigos,
+                                                 @Param("productoId") Long productoId);
+
+    @Query("""
+            SELECT s FROM Stock s
+            JOIN FETCH s.producto p
+            WHERE s.fechaVencimiento IS NOT NULL
+              AND s.fechaVencimiento BETWEEN :desde AND :hasta
+            ORDER BY s.fechaVencimiento ASC
+            """)
+    List<Stock> findExpiringBetween(@Param("desde") LocalDate desde,
+                                    @Param("hasta") LocalDate hasta);
 }

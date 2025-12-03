@@ -5,6 +5,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import quantify.BoticaSaid.dto.producto.ProductoRequest;
 import quantify.BoticaSaid.dto.producto.ProductoResponse;
+import quantify.BoticaSaid.dto.producto.ProductoPrecioComparacionResponse;
 import quantify.BoticaSaid.dto.stock.AgregarStockRequest;
 import quantify.BoticaSaid.model.Producto;
 import quantify.BoticaSaid.service.ProductoService;
@@ -31,7 +32,7 @@ public class ProductoController {
     @PostMapping("/nuevo")
     public ResponseEntity<?> crearProducto(@RequestBody ProductoRequest request) {
         try {
-            Object result = productoService.crearProductoConStock(request);
+            Object result = productoService.crearProducto(request);
             if (result instanceof Map) {
                 return ResponseEntity.ok(result);
             } else if (result instanceof Producto) {
@@ -81,7 +82,8 @@ public class ProductoController {
 
     /**
      * Listar todos los productos con paginación y filtros opcionales
-     * GET /productos?q={texto}&lab={laboratorio}&cat={categoria}&page={page}&size={size}
+     * GET
+     * /productos?q={texto}&lab={laboratorio}&cat={categoria}&page={page}&size={size}
      */
     @GetMapping
     public ResponseEntity<Map<String, Object>> listarTodos(
@@ -89,8 +91,7 @@ public class ProductoController {
             @RequestParam(required = false) String lab,
             @RequestParam(required = false) String cat,
             @RequestParam(defaultValue = "0") int page,
-            @RequestParam(defaultValue = "10") int size
-    ) {
+            @RequestParam(defaultValue = "10") int size) {
         Pageable pageable = PageRequest.of(page, size);
         Page<Producto> paged = productoService.buscarPaginadoPorQuery(q, lab, cat, pageable);
         List<ProductoResponse> productosRes = paged.getContent().stream()
@@ -170,7 +171,8 @@ public class ProductoController {
     }
 
     /**
-     * Agregar lotes de stock a un producto existente sin modificar datos del producto
+     * Agregar lotes de stock a un producto existente sin modificar datos del
+     * producto
      * POST /productos/agregar-lote
      */
     @PostMapping("/agregar-lote")
@@ -221,5 +223,18 @@ public class ProductoController {
                 .map(productoService::toProductoResponse)
                 .toList();
         return ResponseEntity.ok(productosRes);
+    }
+
+    /**
+     * Comparar precios de un producto en diferentes proveedores
+     * GET /productos/{id}/comparacion-precios
+     */
+    @GetMapping("/{id}/comparacion-precios")
+    public ResponseEntity<ProductoPrecioComparacionResponse> compararPrecios(@PathVariable Long id) {
+        ProductoPrecioComparacionResponse response = productoService.obtenerComparativaPrecios(id);
+        if (response == null) {
+            return ResponseEntity.notFound().build();
+        }
+        return ResponseEntity.ok(response);
     }
 }

@@ -345,18 +345,23 @@ public class CajaService {
 
     // Nueva: permite evitar cargar movimientos en listados
     public CajaResumenDTO convertirCajaAResumen(Caja caja, boolean incluirMovsManuales) {
-        List<MovimientoEfectivo> movimientosManual = incluirMovsManuales
+        // Cargar movimientos según el flag: si se piden solo manuales, cargamos solo esos;
+        // si no, cargamos todos los movimientos de la caja (manuales y automáticos).
+        List<MovimientoEfectivo> movimientos = incluirMovsManuales
                 ? movimientoEfectivoRepository.findByCajaAndEsManual(caja, true)
-                : List.of();
+                : movimientoEfectivoRepository.findByCaja(caja);
 
-        BigDecimal ingresos = movimientosManual.stream()
+        // Calcular ingresos y egresos a partir de la lista seleccionada.
+        BigDecimal ingresos = movimientos.stream()
                 .filter(m -> m.getTipo() == MovimientoEfectivo.TipoMovimiento.INGRESO)
                 .map(MovimientoEfectivo::getMonto)
+                .filter(monto -> monto != null)
                 .reduce(BigDecimal.ZERO, BigDecimal::add);
 
-        BigDecimal egresos = movimientosManual.stream()
+        BigDecimal egresos = movimientos.stream()
                 .filter(m -> m.getTipo() == MovimientoEfectivo.TipoMovimiento.EGRESO)
                 .map(MovimientoEfectivo::getMonto)
+                .filter(monto -> monto != null)
                 .reduce(BigDecimal.ZERO, BigDecimal::add);
 
         LocalDateTime desde = caja.getFechaApertura();
@@ -397,7 +402,7 @@ public class CajaService {
         BigDecimal totalYape = ventasYape.add(ventasMixtoDigital);
 
         List<MovimientoDTO> movimientosDTO = incluirMovsManuales
-                ? movimientosManual.stream().map(this::mapMovimientoBasico).toList()
+                ? movimientos.stream().map(this::mapMovimientoBasico).toList()
                 : List.of();
 
         CajaResumenDTO dto = new CajaResumenDTO();

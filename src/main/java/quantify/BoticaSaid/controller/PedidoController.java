@@ -78,4 +78,40 @@ public class PedidoController {
         List<PedidoReporteDTO> reporte = pedidoService.obtenerReporte(proveedorId, fechaPedido);
         return ResponseEntity.ok(reporte);
     }
+    // Agregar dentro de la clase PedidoController existente
+
+    @PutMapping("/{id}")
+    public ResponseEntity<Map<String, Object>> actualizarPedido(
+            @PathVariable Long id,
+            @RequestBody quantify.BoticaSaid.dto.pedido.ActualizarPedidoRequest request) {
+
+        Map<String, Object> response = new HashMap<>();
+        boolean exito = pedidoService.actualizarPedido(id, request);
+
+        if (exito) {
+            response.put("success", true);
+            response.put("message", "Pedido y stock actualizados correctamente");
+            return ResponseEntity.ok(response);
+        } else {
+            response.put("success", false);
+            response.put("message", "No se pudo actualizar el pedido (no encontrado o datos inválidos)");
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(response);
+        }
+    }
+
+    @DeleteMapping("/{id}")
+    public ResponseEntity<Map<String, Object>> eliminarPedido(@PathVariable Long id) {
+        Map<String, Object> response = new HashMap<>();
+        boolean exito = pedidoService.eliminarPedido(id);
+
+        if (exito) {
+            response.put("success", true);
+            response.put("message", "Pedido y stock eliminados correctamente");
+            return ResponseEntity.ok(response);
+        } else {
+            response.put("success", false);
+            response.put("message", "Pedido no encontrado");
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(response);
+        }
+    }
 }

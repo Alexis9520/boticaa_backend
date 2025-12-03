@@ -5,7 +5,7 @@ import java.math.BigDecimal;
 public class StockItemDTO {
     private Integer id;
     private String codigoStock;
-    private String codigoBarras;
+    private Long idProducto;
     private String nombre;
     private String concentracion;
     private Integer cantidadUnidades;
@@ -16,12 +16,13 @@ public class StockItemDTO {
     private String laboratorio;
     private String categoria;
 
-    public StockItemDTO() {}
+    public StockItemDTO() {
+    }
 
     public StockItemDTO(
             Integer id,
             String codigoStock,
-            String codigoBarras,
+            Long idProducto,
             String nombre,
             String concentracion,
             Integer cantidadUnidades,
@@ -34,7 +35,7 @@ public class StockItemDTO {
     ) {
         this.id = id;
         this.codigoStock = codigoStock;
-        this.codigoBarras = codigoBarras;
+        this.idProducto = idProducto;
         this.nombre = nombre;
         this.concentracion = concentracion;
         this.cantidadUnidades = cantidadUnidades;
@@ -46,14 +47,29 @@ public class StockItemDTO {
         this.categoria = categoria;
     }
 
-    public Integer getId() { return id; }
-    public void setId(Integer id) { this.id = id; }
+    public Long getIdProducto() {
+        return idProducto;
+    }
 
-    public String getCodigoStock() { return codigoStock; }
-    public void setCodigoStock(String codigoStock) { this.codigoStock = codigoStock; }
+    public void setIdProducto(Long idProducto) {
+        this.idProducto = idProducto;
+    }
 
-    public String getCodigoBarras() { return codigoBarras; }
-    public void setCodigoBarras(String codigoBarras) { this.codigoBarras = codigoBarras; }
+    public Integer getId() {
+        return id;
+    }
+
+    public void setId(Integer id) {
+        this.id = id;
+    }
+
+    public String getCodigoStock() {
+        return codigoStock;
+    }
+
+    public void setCodigoStock(String codigoStock) {
+        this.codigoStock = codigoStock;
+    }
 
     public String getNombre() { return nombre; }
     public void setNombre(String nombre) { this.nombre = nombre; }
