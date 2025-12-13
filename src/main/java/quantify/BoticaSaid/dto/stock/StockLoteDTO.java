@@ -5,7 +5,7 @@ import java.time.LocalDate;
 
 public class StockLoteDTO {
     private Integer id;
-    private String codigoStock;      // <-- AGREGA ESTA LÍNEA
+    private String codigoStock; // <-- AGREGA ESTA LÍNEA
     private int cantidadUnidades;
     private LocalDate fechaVencimiento;
     private BigDecimal precioCompra;
@@ -17,11 +17,12 @@ public class StockLoteDTO {
     public void setId(Integer id) {
         this.id = id;
     }
-// Getters y setters
+    // Getters y setters
 
     public String getCodigoStock() {
         return codigoStock;
     }
+
     public void setCodigoStock(String codigoStock) {
         this.codigoStock = codigoStock;
     }
@@ -29,6 +30,7 @@ public class StockLoteDTO {
     public int getCantidadUnidades() {
         return cantidadUnidades;
     }
+
     public void setCantidadUnidades(int cantidadUnidades) {
         this.cantidadUnidades = cantidadUnidades;
     }
@@ -36,6 +38,7 @@ public class StockLoteDTO {
     public LocalDate getFechaVencimiento() {
         return fechaVencimiento;
     }
+
     public void setFechaVencimiento(LocalDate fechaVencimiento) {
         this.fechaVencimiento = fechaVencimiento;
     }
@@ -43,7 +46,18 @@ public class StockLoteDTO {
     public BigDecimal getPrecioCompra() {
         return precioCompra;
     }
+
     public void setPrecioCompra(BigDecimal precioCompra) {
         this.precioCompra = precioCompra;
+    }
+
+    private Boolean activo;
+
+    public Boolean getActivo() {
+        return activo;
+    }
+
+    public void setActivo(Boolean activo) {
+        this.activo = activo;
     }
 }

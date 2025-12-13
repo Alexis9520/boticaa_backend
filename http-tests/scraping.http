@@ -1,0 +1,87 @@
+### Pruebas para el ScrapingController
+### Base URL y variables
+@baseUrl = http://localhost:8090
+@contentType = application/json
+@authToken = eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiIxMjM0NTY3OCIsImlhdCI6MTc2NTU2ODc5MiwiZXhwIjoxNzY1NjU1MTkyfQ.kHVvp_HjXVXlCWEKBV48xvv0exl890BedOw_xbv2-X4
+@sessionId = s_d9ae8166
+###########################################################################
+### 1) Health check (usa Authorization Bearer)
+GET {{baseUrl}}/api/scraping/health
+Authorization: Bearer {{authToken}}
+
+###########################################################################
+### 2) Crear sesión (session/create)
+# Body mínimo; el microservicio de scraping suele esperar al menos user_agent y/o headless.
+POST {{baseUrl}}/api/scraping/session/create
+Content-Type: {{contentType}}
+Authorization: Bearer {{authToken}}
+
+
+# Si el microservicio responde 500: revisa sus logs en http://127.0.0.1:5000 (o donde esté desplegado). Un 500 aquí indica error en el microservicio remoto al manejar la creación de sesión.
+# Comprobaciones rápidas:
+# 1) Llamar health del scraping (ya definido arriba) — si devuelve 200 el servicio está vivo.
+# 2) Revisar que Authorization se reenvía correctamente (el token no tiene que ser el mismo que tu app; depende del microservicio).
+# 3) Revisar logs del microservicio scraping (ejecutado localmente en 127.0.0.1:5000) para ver la traza del 500.
+
+###########################################################################
+### 3) Obtener estado de sesión (session/{sessionId}/status)
+# Reemplaza sessionId con el id devuelto por la creación de sesión
+GET {{baseUrl}}/api/scraping/session/{{sessionId}}/status
+Authorization: Bearer {{authToken}}
+
+###########################################################################
+### 4) Validar sesión (session/{sessionId}/validate)
+POST {{baseUrl}}/api/scraping/session/{{sessionId}}/validate
+Authorization: Bearer {{authToken}}
+
+###########################################################################
+### 5) Invalidar sesión (session/{sessionId}/invalidate)
+POST {{baseUrl}}/api/scraping/session/{{sessionId}}/invalidate
+Authorization: Bearer {{authToken}}
+
+###########################################################################
+### 6) Listar sesiones admin (admin/sessions)
+GET {{baseUrl}}/api/scraping/admin/sessions
+# Este endpoint requiere rol admin; usa Authorization con token de admin
+Authorization: Bearer {{authToken}}
+
+###########################################################################
+### 7) Scrape - caso: buscar por nro (campo 'nro')
+POST {{baseUrl}}/api/scraping/scrape
+Content-Type: {{contentType}}
+Authorization: Bearer {{authToken}}
+
+{
+  "nro": "NG0645",
+}
+
+
+###########################################################################
+### 8) Scrape - caso: buscar por nroDeRegistroSanitario (se busca primero en BD local)
+POST {{baseUrl}}/api/scraping/scrape
+Content-Type: {{contentType}}
+Authorization: Bearer {{authToken}}
+
+{
+  "nroDeRegistroSanitario": "BE00571"
+}
+
+###########################################################################
+### 9) Scrape - caso: enviar sólo session_id y nro vacío (ejemplo de error esperado)
+POST {{baseUrl}}/api/scraping/scrape
+Content-Type: {{contentType}}
+Authorization: Bearer {{authToken}}
+
+{
+  "nro": "",
+  "nroDeRegistroSanitario": "",
+  "session_id": "{{sessionId}}"
+}
+### 10) Reset
+POST {{baseUrl}}/api/scraping/admin/sessions/reset
+Authorization: Bearer {{authToken}}
+###########################################################################
+### Notas
+# - Reemplaza {{baseUrl}}, {{authToken}} y {{sessionId}} según corresponda.
+# - Si tu cliente HTTP soporta variables (p. ej. REST Client de VSCode), puedes ejecutar cada bloque independientemente.
+# - Ajusta los cuerpos de request según los campos reales de tus DTOs si difieren.

@@ -1,127 +1,138 @@
 package quantify.BoticaSaid.dto.pedido;
 
-        import java.math.BigDecimal;
-        import java.time.LocalDate;
-        import java.time.LocalDateTime;
+import java.math.BigDecimal;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
 
-        public class PedidoReporteDTO {
+public class PedidoReporteDTO {
 
-            private Long pedidoId;
-            private String codigoBarras;
-            private String producto;
-            private String concentracion;
-            private String presentacion;
-            private String codigoStock;
-            private Integer cantUnidades;
-            private Integer cantInicial;
-            private LocalDate fVencimiento;
-            private BigDecimal precioCompra;
-            private LocalDateTime fCreacion;
+    private Long pedidoId;
+    private String codigoBarras;
+    private String producto;
+    private String concentracion;
+    private String presentacion;
+    private String codigoStock;
+    private Integer cantUnidades;
+    private Integer cantInicial;
+    private LocalDate fVencimiento;
+    private BigDecimal precioCompra;
+    private LocalDateTime fCreacion;
+    private LocalDate fechaDePedido;
 
-            public PedidoReporteDTO() {}
+    public PedidoReporteDTO() {
+    }
 
-            public PedidoReporteDTO(Long pedidoId, String codigoBarras, String producto, String concentracion,
-                                    String presentacion, String codigoStock, Integer cantUnidades,
-                                    Integer cantInicial, LocalDate fVencimiento,
-                                    BigDecimal precioCompra, LocalDateTime fCreacion) {
-                this.pedidoId = pedidoId;
-                this.codigoBarras = codigoBarras;
-                this.producto = producto;
-                this.concentracion = concentracion;
-                this.presentacion = presentacion;
-                this.codigoStock = codigoStock;
-                this.cantUnidades = cantUnidades;
-                this.cantInicial = cantInicial;
-                this.fVencimiento = fVencimiento;
-                this.precioCompra = precioCompra;
-                this.fCreacion = fCreacion;
-            }
+    public PedidoReporteDTO(Long pedidoId, String codigoBarras, String producto, String concentracion,
+            String presentacion, String codigoStock, Integer cantUnidades,
+            Integer cantInicial, LocalDate fVencimiento,
+            BigDecimal precioCompra, LocalDateTime fCreacion, LocalDate fechaDePedido) {
+        this.pedidoId = pedidoId;
+        this.codigoBarras = codigoBarras;
+        this.producto = producto;
+        this.concentracion = concentracion;
+        this.presentacion = presentacion;
+        this.codigoStock = codigoStock;
+        this.cantUnidades = cantUnidades;
+        this.cantInicial = cantInicial;
+        this.fVencimiento = fVencimiento;
+        this.precioCompra = precioCompra;
+        this.fCreacion = fCreacion;
+        this.fechaDePedido = fechaDePedido;
+    }
 
-            public Long getPedidoId() {
-                return pedidoId;
-            }
+    public Long getPedidoId() {
+        return pedidoId;
+    }
 
-            public void setPedidoId(Long pedidoId) {
-                this.pedidoId = pedidoId;
-            }
+    public void setPedidoId(Long pedidoId) {
+        this.pedidoId = pedidoId;
+    }
 
-            public String getCodigoBarras() {
-                return codigoBarras;
-            }
+    public String getCodigoBarras() {
+        return codigoBarras;
+    }
 
-            public void setCodigoBarras(String codigoBarras) {
-                this.codigoBarras = codigoBarras;
-            }
+    public void setCodigoBarras(String codigoBarras) {
+        this.codigoBarras = codigoBarras;
+    }
 
-            public String getProducto() {
-                return producto;
-            }
+    public String getProducto() {
+        return producto;
+    }
 
-            public void setProducto(String producto) {
-                this.producto = producto;
-            }
+    public void setProducto(String producto) {
+        this.producto = producto;
+    }
 
-            public String getConcentracion() {
-                return concentracion;
-            }
+    public String getConcentracion() {
+        return concentracion;
+    }
 
-            public void setConcentracion(String concentracion) {
-                this.concentracion = concentracion;
-            }
+    public void setConcentracion(String concentracion) {
+        this.concentracion = concentracion;
+    }
 
-            public String getPresentacion() {
-                return presentacion;
-            }
+    public String getPresentacion() {
+        return presentacion;
+    }
 
-            public void setPresentacion(String presentacion) {
-                this.presentacion = presentacion;
-            }
+    public void setPresentacion(String presentacion) {
+        this.presentacion = presentacion;
+    }
 
-            public String getCodigoStock() {
-                return codigoStock;
-            }
+    public String getCodigoStock() {
+        return codigoStock;
+    }
 
-            public void setCodigoStock(String codigoStock) {
-                this.codigoStock = codigoStock;
-            }
+    public void setCodigoStock(String codigoStock) {
+        this.codigoStock = codigoStock;
+    }
 
-            public Integer getCantUnidades() {
-                return cantUnidades;
-            }
+    public Integer getCantUnidades() {
+        return cantUnidades;
+    }
 
-            public void setCantUnidades(Integer cantUnidades) {
-                this.cantUnidades = cantUnidades;
-            }
+    public void setCantUnidades(Integer cantUnidades) {
+        this.cantUnidades = cantUnidades;
+    }
 
-            public Integer getCantInicial() {
-                return cantInicial;
-            }
+    public Integer getCantInicial() {
+        return cantInicial;
+    }
 
-            public void setCantInicial(Integer cantInicial) {
-                this.cantInicial = cantInicial;
-            }
+    public void setCantInicial(Integer cantInicial) {
+        this.cantInicial = cantInicial;
+    }
 
-            public LocalDate getFVencimiento() {
-                return fVencimiento;
-            }
+    public LocalDate getFVencimiento() {
+        return fVencimiento;
+    }
 
-            public void setFVencimiento(LocalDate fVencimiento) {
-                this.fVencimiento = fVencimiento;
-            }
+    public void setFVencimiento(LocalDate fVencimiento) {
+        this.fVencimiento = fVencimiento;
+    }
 
-            public BigDecimal getPrecioCompra() {
-                return precioCompra;
-            }
+    public BigDecimal getPrecioCompra() {
+        return precioCompra;
+    }
 
-            public void setPrecioCompra(BigDecimal precioCompra) {
-                this.precioCompra = precioCompra;
-            }
+    public void setPrecioCompra(BigDecimal precioCompra) {
+        this.precioCompra = precioCompra;
+    }
 
-            public LocalDateTime getFCreacion() {
-                return fCreacion;
-            }
+    public LocalDateTime getFCreacion() {
+        return fCreacion;
+    }
 
-            public void setFCreacion(LocalDateTime fCreacion) {
-                this.fCreacion = fCreacion;
-            }
-        }
+    public void setFCreacion(LocalDateTime fCreacion) {
+        this.fCreacion = fCreacion;
+    }
+
+    public LocalDate getFechaDePedido() {
+        return fechaDePedido;
+    }
+
+    public void setFechaDePedido(LocalDate fechaDePedido) {
+        this.fechaDePedido = fechaDePedido;
+    }
+}

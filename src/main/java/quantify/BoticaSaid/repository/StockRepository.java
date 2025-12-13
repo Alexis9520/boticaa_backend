@@ -31,16 +31,17 @@ public interface StockRepository extends JpaRepository<Stock, Integer>, JpaSpeci
 
     // Find stocks created within a date range with product info
     @Query("SELECT s FROM Stock s JOIN FETCH s.producto p WHERE s.fechaCreacion BETWEEN :fechaInicio AND :fechaFin ORDER BY s.fechaCreacion DESC")
-    List<Stock> findByFechaCreacionBetweenWithProducto(@Param("fechaInicio") LocalDateTime fechaInicio, @Param("fechaFin") LocalDateTime fechaFin);
+    List<Stock> findByFechaCreacionBetweenWithProducto(@Param("fechaInicio") LocalDateTime fechaInicio,
+            @Param("fechaFin") LocalDateTime fechaFin);
 
     @Query("SELECT s FROM Stock s JOIN FETCH s.producto p JOIN p.productoProveedores pp WHERE s.fechaCreacion BETWEEN :fechaInicio AND :fechaFin AND pp.proveedor.id = :proveedorId ORDER BY s.fechaCreacion DESC")
     List<Stock> findByFechaAndProveedor(@Param("fechaInicio") LocalDateTime start,
-                                        @Param("fechaFin") LocalDateTime end,
-                                        @Param("proveedorId") Long proveedorId);
+            @Param("fechaFin") LocalDateTime end,
+            @Param("proveedorId") Long proveedorId);
 
     @Query("SELECT s FROM Stock s WHERE s.codigoStock IN :codigos AND s.producto.id = :productoId")
     List<Stock> findByCodigoStockInAndProductoId(@Param("codigos") List<String> codigos,
-                                                 @Param("productoId") Long productoId);
+            @Param("productoId") Long productoId);
 
     @Query("""
             SELECT s FROM Stock s
@@ -50,5 +51,12 @@ public interface StockRepository extends JpaRepository<Stock, Integer>, JpaSpeci
             ORDER BY s.fechaVencimiento ASC
             """)
     List<Stock> findExpiringBetween(@Param("desde") LocalDate desde,
-                                    @Param("hasta") LocalDate hasta);
+            @Param("hasta") LocalDate hasta);
+
+    // Contar lotes vencidos (fecha_vencimiento < hoy)
+    @Query("SELECT COUNT(s) FROM Stock s WHERE s.fechaVencimiento IS NOT NULL AND s.fechaVencimiento < :hoy AND s.cantidadUnidades > 0")
+    Long countLotesVencidos(@Param("hoy") LocalDate hoy);
+
+    // Buscar stocks con cantidad cero
+    List<Stock> findByCantidadUnidades(int cantidad);
 }

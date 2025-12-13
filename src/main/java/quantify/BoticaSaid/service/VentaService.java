@@ -211,6 +211,7 @@ public class VentaService {
                         detalleBlister.setProducto(producto);
                         detalleBlister.setCantidad(blisterEnEsteStock * unidadesPorBlister);
                         detalleBlister.setPrecioUnitario(precioBlister.setScale(2, RoundingMode.HALF_UP));
+                        detalleBlister.setTipoVenta("BLISTER");
                         detalleBoletaRepository.save(detalleBlister);
 
                         totalVenta = totalVenta.add(precioBlister.multiply(BigDecimal.valueOf(blisterEnEsteStock)));
@@ -240,6 +241,7 @@ public class VentaService {
                     detalleUnidad.setProducto(producto);
                     detalleUnidad.setCantidad(cantidadUsada);
                     detalleUnidad.setPrecioUnitario(precioUnidad.setScale(2, RoundingMode.HALF_UP));
+                    detalleUnidad.setTipoVenta("UNIDAD");
                     detalleBoletaRepository.save(detalleUnidad);
 
                     totalVenta = totalVenta.add(precioUnidad.multiply(BigDecimal.valueOf(cantidadUsada)));

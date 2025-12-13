@@ -62,6 +62,14 @@ public class ProductoService {
             throw new IllegalArgumentException("El nombre del producto es obligatorio.");
         }
 
+        // Verificar unicidad de nroRegistroSanitario si fue proporcionado
+        if (request.getNroRegistroSanitario() != null && !request.getNroRegistroSanitario().isBlank()) {
+            productoRepository.findByNroRegistroSanitario(request.getNroRegistroSanitario())
+                    .ifPresent(p -> {
+                        throw new IllegalArgumentException("Ya existe un producto con el mismo nroRegistroSanitario: " + request.getNroRegistroSanitario());
+                    });
+        }
+
         System.out.println("=== CREANDO PRODUCTO ===");
         System.out.println("Código de barras: " + request.getCodigoBarras());
 
@@ -89,6 +97,16 @@ public class ProductoService {
                 existente.setPrincipioActivo(request.getPrincipioActivo());
                 existente.setTipoMedicamento(request.getTipoMedicamento());
                 existente.setPresentacion(request.getPresentacion());
+                // Validar unicidad si se está asignando/actualizando el nroRegistroSanitario
+                String nuevoNro = request.getNroRegistroSanitario();
+                if (nuevoNro != null && !nuevoNro.isBlank() && !nuevoNro.equals(existente.getNroRegistroSanitario())) {
+                    productoRepository.findByNroRegistroSanitario(nuevoNro).ifPresent(other -> {
+                        if (!other.getId().equals(existente.getId())) {
+                            throw new IllegalArgumentException("Ya existe otro producto con el mismo nroRegistroSanitario: " + nuevoNro);
+                        }
+                    });
+                }
+                existente.setNroRegistroSanitario(nuevoNro);
 
                 // Sincronizar proveedores (nueva funcionalidad con múltiples proveedores)
                 sincronizarProveedores(existente, request);
@@ -127,6 +145,13 @@ public class ProductoService {
         producto.setPrincipioActivo(request.getPrincipioActivo());
         producto.setTipoMedicamento(request.getTipoMedicamento());
         producto.setPresentacion(request.getPresentacion());
+        // Validar unicidad antes de asignar si se provee
+        if (request.getNroRegistroSanitario() != null && !request.getNroRegistroSanitario().isBlank()) {
+            productoRepository.findByNroRegistroSanitario(request.getNroRegistroSanitario()).ifPresent(other -> {
+                throw new IllegalArgumentException("Ya existe un producto con el mismo nroRegistroSanitario: " + request.getNroRegistroSanitario());
+            });
+        }
+        producto.setNroRegistroSanitario(request.getNroRegistroSanitario());
 
         // Sincronizar proveedores (nueva funcionalidad con múltiples proveedores)
         sincronizarProveedores(producto, request);
@@ -138,7 +163,7 @@ public class ProductoService {
         return guardado;
     }
 
-    // Buscar producto por ID con stocks
+    // Buscar producto por ID with stocks
     public Producto buscarPorId(Long id) {
         Optional<Producto> prodOpt = productoRepository.findByIdWithStocks(id);
         if (prodOpt.isPresent() && prodOpt.get().isActivo()) {
@@ -148,7 +173,7 @@ public class ProductoService {
         return (prod.isPresent() && prod.get().isActivo()) ? prod.get() : null;
     }
 
-    // Buscar producto por código de barras con stocks
+    // Buscar producto por código de barras with stocks
     public Producto buscarPorCodigoBarras(String codigoBarras) {
         if (codigoBarras == null || codigoBarras.isBlank())
             return null;
@@ -158,6 +183,19 @@ public class ProductoService {
         }
         Producto prod = productoRepository.findByCodigoBarras(codigoBarras);
         return (prod != null && prod.isActivo()) ? prod : null;
+    }
+
+    // Buscar producto por número de registro sanitario
+    public Producto buscarPorNroRegistroSanitario(String nroRegistroSanitario) {
+        if (nroRegistroSanitario == null || nroRegistroSanitario.isBlank()) return null;
+        Optional<Producto> opt = productoRepository.findByNroRegistroSanitario(nroRegistroSanitario);
+        if (opt.isPresent() && opt.get().isActivo()) {
+            Producto p = opt.get();
+            // Forzar carga de stocks si es necesario
+            if (p.getStocks() != null) p.getStocks().size();
+            return p;
+        }
+        return null;
     }
 
     // Listar todos los productos activos con stocks
@@ -380,6 +418,16 @@ public class ProductoService {
         producto.setPrincipioActivo(request.getPrincipioActivo());
         producto.setTipoMedicamento(request.getTipoMedicamento());
         producto.setPresentacion(request.getPresentacion());
+        // Validar unicidad si se intenta cambiar el nroRegistroSanitario durante la actualización
+        String nroNuevo = request.getNroRegistroSanitario();
+        if (nroNuevo != null && !nroNuevo.isBlank() && (producto.getNroRegistroSanitario() == null || !nroNuevo.equals(producto.getNroRegistroSanitario()))) {
+            productoRepository.findByNroRegistroSanitario(nroNuevo).ifPresent(other -> {
+                if (!other.getId().equals(producto.getId())) {
+                    throw new IllegalArgumentException("Ya existe otro producto con el mismo nroRegistroSanitario: " + nroNuevo);
+                }
+            });
+        }
+        producto.setNroRegistroSanitario(nroNuevo);
 
         // Sincronizar proveedores (nueva funcionalidad con múltiples proveedores)
         sincronizarProveedores(producto, request);
@@ -435,6 +483,7 @@ public class ProductoService {
         resp.setPrincipioActivo(producto.getPrincipioActivo());
         resp.setTipoMedicamento(producto.getTipoMedicamento());
         resp.setPresentacion(producto.getPresentacion());
+        resp.setNroRegistroSanitario(producto.getNroRegistroSanitario());
 
         // Agregar información de proveedores (múltiples)
         if (producto.getProductoProveedores() != null && !producto.getProductoProveedores().isEmpty()) {

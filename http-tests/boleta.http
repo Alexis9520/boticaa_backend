@@ -1,16 +1,16 @@
 ### Receipt/Boleta Operations Tests
 ### Base URL
-@baseUrl = http://localhost:8080
+@baseUrl = http://localhost:8090
 @contentType = application/json
 
 ### Variables
-@authToken = Bearer YOUR_TOKEN_HERE
-@boletaId = 1
+@authToken = Bearer eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiIxMjM0NTY3OCIsImlhdCI6MTc2NTYwNTIyMCwiZXhwIjoxNzY1NjkxNjIwfQ.1jHIpUKg9FHnsjZiaM4jJtbK999R20ZrmihrDY8n2pQ
+@boletaId = 530
 @boletaNumero = BOL-001
 
 ###############################################################################
 ### 1. Get Receipt by ID
-GET {{baseUrl}}/boletas/{{boletaId}}
+GET {{baseUrl}}/api/boletas/{{boletaId}}
 Authorization: {{authToken}}
 
 ###############################################################################

@@ -52,7 +52,8 @@ public class StockService {
                 producto.getPrecioVentaUnd(),
                 fechaIso,
                 producto.getLaboratorio(),
-                producto.getCategoria());
+                producto.getCategoria(),
+                stock.getActivo());
     }
 
     public List<StockItemDTO> listarStockPorVencer(int dias) {
@@ -86,7 +87,8 @@ public class StockService {
                     producto.getPrecioVentaUnd(),
                     fechaIso,
                     producto.getLaboratorio(),
-                    producto.getCategoria());
+                    producto.getCategoria(),
+                    stock.getActivo());
         }).collect(Collectors.toList());
     }
 
@@ -137,12 +139,28 @@ public class StockService {
                     producto.getPrecioVentaUnd(),
                     fechaIso,
                     producto.getLaboratorio(),
-                    producto.getCategoria());
+                    producto.getCategoria(),
+                    stock.getActivo());
         }).toList();
 
         return PageResponse.of(content, page.getTotalElements(), page.getNumber(), page.getSize(),
                 page.getTotalPages());
     }
+
+    @Transactional
+    public int desactivarStocksVacios() {
+        List<Stock> stocksVacios = stockRepository.findByCantidadUnidades(0);
+        int count = 0;
+        for (Stock stock : stocksVacios) {
+            if (stock.getActivo() == null || stock.getActivo()) {
+                stock.setActivo(false);
+                stockRepository.save(stock);
+                count++;
+            }
+        }
+        return count;
+    }
+
     @Transactional
     public void crearStock(StockItemDTO dto) {
         Producto producto = null;

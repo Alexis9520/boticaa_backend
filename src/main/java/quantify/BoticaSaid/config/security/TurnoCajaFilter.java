@@ -39,6 +39,12 @@ public class TurnoCajaFilter extends OncePerRequestFilter {
             return;
         }
 
+        // EXCLUSIÓN: no aplicar lógica de turno/caja a scraping endpoints
+        if (uri != null && uri.startsWith("/api/scraping/")) {
+            filterChain.doFilter(request, response);
+            return;
+        }
+
         var authentication = SecurityContextHolder.getContext().getAuthentication();
         if (authentication != null && authentication.getPrincipal() instanceof UserDetails userDetails) {
             Usuario usuario = usuarioRepository.findByDni(userDetails.getUsername()).orElse(null);

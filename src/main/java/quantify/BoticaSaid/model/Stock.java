@@ -47,8 +47,12 @@ public class Stock {
     @JsonIgnore
     private Producto producto;
 
+    @Column(name = "activo")
+    private Boolean activo;
+
     // Constructor vacío
-    public Stock() {}
+    public Stock() {
+    }
 
     // Constructor con parámetros
     public Stock(int cantidadUnidades, LocalDate fechaVencimiento, BigDecimal precioCompra) {
@@ -58,7 +62,6 @@ public class Stock {
     }
 
     // Getters y Setters
-
 
     public String getCodigoStock() {
         return codigoStock;
@@ -130,5 +133,13 @@ public class Stock {
 
     public void setFechaModificacion(LocalDateTime fechaModificacion) {
         this.fechaModificacion = fechaModificacion;
+    }
+
+    public Boolean getActivo() {
+        return activo;
+    }
+
+    public void setActivo(Boolean activo) {
+        this.activo = activo;
     }
 }

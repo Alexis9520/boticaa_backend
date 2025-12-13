@@ -53,6 +53,10 @@ public class Producto {
     @Column(name = "presentacion")
     private String presentacion;
 
+    // NUEVO: numero de registro sanitario (puede ser nulo, pero unico cuando tiene valor)
+    @Column(name = "nro_registro_sanitario", length = 255, unique = true)
+    private String nroRegistroSanitario;
+
     @Column(name = "fecha_creacion", insertable = false, updatable = false)
     @Temporal(TemporalType.TIMESTAMP)
     private Date fechaCreacion;
@@ -182,6 +186,15 @@ public class Producto {
 
     public void setPresentacion(String presentacion) {
         this.presentacion = presentacion;
+    }
+
+    // Getter/Setter para nroRegistroSanitario
+    public String getNroRegistroSanitario() {
+        return nroRegistroSanitario;
+    }
+
+    public void setNroRegistroSanitario(String nroRegistroSanitario) {
+        this.nroRegistroSanitario = nroRegistroSanitario;
     }
 
     public Date getFechaCreacion() {

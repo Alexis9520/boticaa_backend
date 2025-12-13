@@ -87,7 +87,11 @@ public class SecurityConfig {
                                 "/v3/api-docs.yml",
                                 "/swagger-ui.html",
                                 "/swagger-ui/**",
-                                "/swagger-ui/index.html"
+                                "/swagger-ui/index.html",
+                                // Permitir endpoints de scraping sin autenticación
+                                "/api/scraping/health",
+                                "/api/scraping/session/create",
+                                "/api/scraping/scrape"
                         ).permitAll()
 
                         // Resto autenticado

@@ -3,15 +3,20 @@ package quantify.BoticaSaid.controller;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
+import quantify.BoticaSaid.dto.producto.ProductoMetricasDTO;
 import quantify.BoticaSaid.dto.producto.ProductoRequest;
 import quantify.BoticaSaid.dto.producto.ProductoResponse;
 import quantify.BoticaSaid.dto.producto.ProductoPrecioComparacionResponse;
 import quantify.BoticaSaid.dto.stock.AgregarStockRequest;
 import quantify.BoticaSaid.model.Producto;
+import quantify.BoticaSaid.repository.ProductoRepository;
+import quantify.BoticaSaid.repository.StockRepository;
 import quantify.BoticaSaid.service.ProductoService;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.data.domain.Pageable;
+
+import java.time.LocalDate;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -22,6 +27,12 @@ public class ProductoController {
 
     @Autowired
     private ProductoService productoService;
+
+    @Autowired
+    private ProductoRepository productoRepository;
+
+    @Autowired
+    private StockRepository stockRepository;
 
     // ===== CREATE OPERATIONS =====
 
@@ -124,17 +135,29 @@ public class ProductoController {
     }
 
     /**
-     * Obtener productos con stock bajo
-     * GET /productos/stock-bajo?umbral={umbral}
+     * Obtener productos con stock bajo (paginado)
+     * GET /productos/stock-bajo?umbral={umbral}&page={page}&size={size}
      */
     @GetMapping("/stock-bajo")
-    public ResponseEntity<List<ProductoResponse>> productosConStockBajo(
-            @RequestParam(defaultValue = "10") int umbral) {
-        List<Producto> productos = productoService.buscarProductosConStockMenorA(umbral);
-        List<ProductoResponse> productosRes = productos.stream()
+    public ResponseEntity<Map<String, Object>> productosConStockBajo(
+            @RequestParam(defaultValue = "10") int umbral,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size) {
+        Pageable pageable = PageRequest.of(page, size);
+        Page<Producto> paged = productoRepository.findByStockBajo(umbral, pageable);
+
+        List<ProductoResponse> productosRes = paged.getContent().stream()
                 .map(productoService::toProductoResponse)
                 .toList();
-        return ResponseEntity.ok(productosRes);
+
+        Map<String, Object> response = new HashMap<>();
+        response.put("content", productosRes);
+        response.put("totalElements", paged.getTotalElements());
+        response.put("totalPages", paged.getTotalPages());
+        response.put("page", paged.getNumber());
+        response.put("size", paged.getSize());
+
+        return ResponseEntity.ok(response);
     }
 
     // ===== UPDATE OPERATIONS =====
@@ -147,14 +170,17 @@ public class ProductoController {
     public ResponseEntity<ProductoResponse> actualizarPorId(
             @PathVariable Long id,
             @RequestBody ProductoRequest request) {
+        try {
+            Producto actualizado = productoService.actualizarPorID(id, request);
 
-        Producto actualizado = productoService.actualizarPorID(id, request);
-
-        if (actualizado != null) {
-            ProductoResponse resp = productoService.toProductoResponse(actualizado);
-            return ResponseEntity.ok(resp);
-        } else {
-            return ResponseEntity.notFound().build();
+            if (actualizado != null) {
+                ProductoResponse resp = productoService.toProductoResponse(actualizado);
+                return ResponseEntity.ok(resp);
+            } else {
+                return ResponseEntity.notFound().build();
+            }
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.status(409).body(null);
         }
     }
 
@@ -236,5 +262,34 @@ public class ProductoController {
             return ResponseEntity.notFound().build();
         }
         return ResponseEntity.ok(response);
+    }
+
+    // ===== MÉTRICAS =====
+
+    /**
+     * Obtener métricas resumen de productos/inventario
+     * GET /productos/metricas
+     * 
+     * Retorna:
+     * - totalProductosActivos: Número de productos activos
+     * - cantidadTotalUnidades: Suma de cantidad_general de todos los productos
+     * activos
+     * - productosStockCritico: Productos con stock <= stock mínimo
+     * - lotesVencidos: Lotes con fecha de vencimiento pasada y cantidad > 0
+     */
+    @GetMapping("/metricas")
+    public ResponseEntity<ProductoMetricasDTO> obtenerMetricas() {
+        Long totalProductos = productoRepository.countByActivoTrue();
+        Long totalUnidades = productoRepository.sumCantidadGeneralByActivoTrue();
+        Long stockCritico = productoRepository.countProductosStockCritico();
+        Long lotesVencidos = stockRepository.countLotesVencidos(LocalDate.now());
+
+        ProductoMetricasDTO metricas = new ProductoMetricasDTO(
+                totalProductos,
+                totalUnidades,
+                stockCritico,
+                lotesVencidos);
+
+        return ResponseEntity.ok(metricas);
     }
 }

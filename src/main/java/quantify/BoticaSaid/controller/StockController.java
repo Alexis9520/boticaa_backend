@@ -79,4 +79,14 @@ public class StockController {
         return ResponseEntity.noContent().build();
     }
 
+    @PostMapping("/deactivate-empty")
+    public ResponseEntity<Map<String, Object>> desactivarStocksVacios() {
+        int count = stockService.desactivarStocksVacios();
+        Map<String, Object> response = new HashMap<>();
+        response.put("success", true);
+        response.put("message", "Stocks desactivados correctamente");
+        response.put("count", count);
+        return ResponseEntity.ok(response);
+    }
+
 }

@@ -15,35 +15,94 @@ public class BoletaResponseDTO {
     private List<DetalleProductoDTO> productos;
     private BigDecimal totalCompra;
     private BigDecimal vuelto;
+    private List<DetalleBoletaResponseDTO> detallesEnriquecidos; // Nuevo campo para detalles con tipo venta
 
     // getters y setters
-    public Long getId() { return id; }
-    public void setId(Long id) { this.id = id; }
+    public Long getId() {
+        return id;
+    }
 
-    public String getNumero() { return numero; }
-    public void setNumero(String numero) { this.numero = numero; }
+    public void setId(Long id) {
+        this.id = id;
+    }
 
-    public String getFecha() { return fecha; }
-    public void setFecha(String fecha) { this.fecha = fecha; }
+    public String getNumero() {
+        return numero;
+    }
 
-    public String getCliente() { return cliente; }
-    public void setCliente(String cliente) { this.cliente = cliente; }
+    public void setNumero(String numero) {
+        this.numero = numero;
+    }
 
-    public String getMetodoPago() { return metodoPago; }
-    public void setMetodoPago(String metodoPago) { this.metodoPago = metodoPago; }
+    public String getFecha() {
+        return fecha;
+    }
 
-    public BigDecimal getTotal() { return total; }
-    public void setTotal(BigDecimal total) { this.total = total; }
+    public void setFecha(String fecha) {
+        this.fecha = fecha;
+    }
 
-    public String getUsuario() { return usuario; }
-    public void setUsuario(String usuario) { this.usuario = usuario; }
+    public String getCliente() {
+        return cliente;
+    }
 
-    public List<DetalleProductoDTO> getProductos() { return productos; }
-    public void setProductos(List<DetalleProductoDTO> productos) { this.productos = productos; }
+    public void setCliente(String cliente) {
+        this.cliente = cliente;
+    }
 
-    public BigDecimal getTotalCompra() { return totalCompra; }
-    public void setTotalCompra(BigDecimal totalCompra) { this.totalCompra = totalCompra; }
+    public String getMetodoPago() {
+        return metodoPago;
+    }
 
-    public BigDecimal getVuelto() { return vuelto; }
-    public void setVuelto(BigDecimal vuelto) { this.vuelto = vuelto; }
+    public void setMetodoPago(String metodoPago) {
+        this.metodoPago = metodoPago;
+    }
+
+    public BigDecimal getTotal() {
+        return total;
+    }
+
+    public void setTotal(BigDecimal total) {
+        this.total = total;
+    }
+
+    public String getUsuario() {
+        return usuario;
+    }
+
+    public void setUsuario(String usuario) {
+        this.usuario = usuario;
+    }
+
+    public List<DetalleProductoDTO> getProductos() {
+        return productos;
+    }
+
+    public void setProductos(List<DetalleProductoDTO> productos) {
+        this.productos = productos;
+    }
+
+    public BigDecimal getTotalCompra() {
+        return totalCompra;
+    }
+
+    public void setTotalCompra(BigDecimal totalCompra) {
+        this.totalCompra = totalCompra;
+    }
+
+    public BigDecimal getVuelto() {
+        return vuelto;
+    }
+
+    public void setVuelto(BigDecimal vuelto) {
+        this.vuelto = vuelto;
+    }
+
+    public List<DetalleBoletaResponseDTO> getDetallesEnriquecidos() {
+        return detallesEnriquecidos;
+    }
+
+    public void setDetallesEnriquecidos(List<DetalleBoletaResponseDTO> detallesEnriquecidos) {
+        this.detallesEnriquecidos = detallesEnriquecidos;
+    }
 }

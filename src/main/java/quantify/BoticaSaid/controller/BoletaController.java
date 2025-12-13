@@ -8,10 +8,15 @@ import org.springframework.data.jpa.domain.Specification;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import quantify.BoticaSaid.dto.boleta.BoletaResponseDTO;
+import quantify.BoticaSaid.dto.boleta.DetalleBoletaResponseDTO;
 import quantify.BoticaSaid.dto.common.PageResponse;
 import quantify.BoticaSaid.dto.producto.DetalleProductoDTO;
 import quantify.BoticaSaid.model.Boleta;
+import quantify.BoticaSaid.model.Producto;
 import quantify.BoticaSaid.repository.BoletaRepository;
+
+import java.math.BigDecimal;
+import java.math.RoundingMode;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -107,7 +112,9 @@ public class BoletaController {
     }
 
     /**
-     * NUEVO: Obtener boleta por ID con productos (para expand del front).
+     * Obtener boleta por ID con productos enriquecidos (tipo venta, precios, etc.).
+     * Soporta lógica híbrida: usa tipo_venta almacenado si existe, sino infiere por
+     * precio.
      */
     @GetMapping("/{id}")
     public ResponseEntity<BoletaResponseDTO> obtenerPorId(@PathVariable Integer id) {
@@ -131,20 +138,82 @@ public class BoletaController {
                         : "");
         dto.setUsuario(b.getUsuario() != null ? b.getUsuario().getNombreCompleto() : "");
 
-        List<DetalleProductoDTO> productos = b.getDetalles() == null ? List.of()
+        List<DetalleBoletaResponseDTO> detalles = b.getDetalles() == null ? List.of()
                 : b.getDetalles().stream().map(d -> {
-                    var p = new DetalleProductoDTO();
-                    if (d.getProducto() != null) {
-                        p.setId(d.getProducto().getId());
-                        p.setCodBarras(d.getProducto().getCodigoBarras());
-                        p.setNombre(d.getProducto().getNombre());
+                    var det = new DetalleBoletaResponseDTO();
+                    Producto producto = d.getProducto();
+
+                    if (producto != null) {
+                        det.setProductoId(producto.getId());
+                        det.setCodigoBarras(producto.getCodigoBarras());
+                        det.setNombre(producto.getNombre());
+                        det.setUnidadesPorBlister(producto.getCantidadUnidadesBlister());
+                        det.setPrecioActualUnd(producto.getPrecioVentaUnd());
+                        det.setPrecioActualBlister(producto.getPrecioVentaBlister());
                     }
-                    p.setCantidad(d.getCantidad());
-                    p.setPrecio(d.getPrecioUnitario());
-                    return p;
+
+                    det.setCantidad(d.getCantidad());
+                    det.setPrecioAplicado(d.getPrecioUnitario());
+
+                    // Lógica híbrida para determinar tipo de venta
+                    String tipoVenta = d.getTipoVenta();
+                    if (tipoVenta == null && producto != null) {
+                        // Inferir tipo comparando precio almacenado con precios actuales
+                        BigDecimal precioAlmacenado = d.getPrecioUnitario();
+                        BigDecimal precioBlister = producto.getPrecioVentaBlister();
+                        BigDecimal precioUnd = producto.getPrecioVentaUnd();
+
+                        if (precioBlister != null && precioAlmacenado != null
+                                && precioAlmacenado.compareTo(precioBlister) == 0) {
+                            tipoVenta = "BLISTER";
+                        } else if (precioUnd != null && precioAlmacenado != null
+                                && precioAlmacenado.compareTo(precioUnd) == 0) {
+                            tipoVenta = "UNIDAD";
+                        } else {
+                            tipoVenta = "DESCONOCIDO";
+                        }
+                    }
+                    det.setTipoVenta(tipoVenta);
+
+                    // Calcular cantidad de blisters si aplica
+                    if ("BLISTER".equals(tipoVenta) && producto != null
+                            && producto.getCantidadUnidadesBlister() != null
+                            && producto.getCantidadUnidadesBlister() > 0) {
+                        det.setCantidadBlisters(d.getCantidad() / producto.getCantidadUnidadesBlister());
+                    } else {
+                        det.setCantidadBlisters(0);
+                    }
+
+                    // Detectar si el precio fue modificado
+                    boolean precioModificado = false;
+                    if (producto != null && d.getPrecioUnitario() != null) {
+                        BigDecimal precioAlmacenado = d.getPrecioUnitario();
+                        BigDecimal precioBlister = producto.getPrecioVentaBlister();
+                        BigDecimal precioUnd = producto.getPrecioVentaUnd();
+
+                        boolean coincideBlister = precioBlister != null
+                                && precioAlmacenado.compareTo(precioBlister) == 0;
+                        boolean coincideUnd = precioUnd != null
+                                && precioAlmacenado.compareTo(precioUnd) == 0;
+
+                        precioModificado = !coincideBlister && !coincideUnd;
+                    }
+                    det.setPrecioModificado(precioModificado);
+
+                    // Calcular subtotal
+                    if ("BLISTER".equals(tipoVenta) && det.getCantidadBlisters() != null
+                            && det.getPrecioAplicado() != null) {
+                        det.setSubtotal(det.getPrecioAplicado().multiply(BigDecimal.valueOf(det.getCantidadBlisters()))
+                                .setScale(2, RoundingMode.HALF_UP));
+                    } else if (det.getCantidad() != null && det.getPrecioAplicado() != null) {
+                        det.setSubtotal(det.getPrecioAplicado().multiply(BigDecimal.valueOf(det.getCantidad()))
+                                .setScale(2, RoundingMode.HALF_UP));
+                    }
+
+                    return det;
                 }).toList();
 
-        dto.setProductos(productos);
+        dto.setDetallesEnriquecidos(detalles);
 
         return ResponseEntity.ok(dto);
     }

@@ -33,6 +33,9 @@ public class ProductoRequest {
     private String tipoMedicamento;
     private String presentacion;
 
+    // NUEVO: numero de registro sanitario
+    private String nroRegistroSanitario;
+
     // Mantener proveedorId para compatibilidad con frontend
     private Long proveedorId;
 
@@ -159,6 +162,14 @@ public class ProductoRequest {
 
     public void setPresentacion(String presentacion) {
         this.presentacion = presentacion;
+    }
+
+    public String getNroRegistroSanitario() {
+        return nroRegistroSanitario;
+    }
+
+    public void setNroRegistroSanitario(String nroRegistroSanitario) {
+        this.nroRegistroSanitario = nroRegistroSanitario;
     }
 
     public Long getProveedorId() {

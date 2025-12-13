@@ -14,70 +14,98 @@ import java.util.Optional;
 @Repository
 public interface ProductoRepository extends JpaRepository<Producto, Long> {
 
-    // Consulta que incluye stocks (NO USAR PARA PAGINACIÓN)
-    @Query("SELECT DISTINCT p FROM Producto p LEFT JOIN FETCH p.stocks WHERE p.activo = true")
-    List<Producto> findByActivoTrueWithStocks();
+  // Consulta que incluye stocks (NO USAR PARA PAGINACIÓN)
+  @Query("SELECT DISTINCT p FROM Producto p LEFT JOIN FETCH p.stocks WHERE p.activo = true")
+  List<Producto> findByActivoTrueWithStocks();
 
-    // Buscar por código con stocks
-    @Query("SELECT p FROM Producto p LEFT JOIN FETCH p.stocks WHERE p.codigoBarras = :codigoBarras")
-    Optional<Producto> findByCodigoBarrasWithStocks(@Param("codigoBarras") String codigoBarras);
+  // Buscar por código con stocks
+  @Query("SELECT p FROM Producto p LEFT JOIN FETCH p.stocks WHERE p.codigoBarras = :codigoBarras")
+  Optional<Producto> findByCodigoBarrasWithStocks(@Param("codigoBarras") String codigoBarras);
 
-    // PAGINACIÓN simple: Solo productos activos
-    @Query("SELECT p FROM Producto p WHERE p.activo = true")
-    Page<Producto> findByActivoTrue(Pageable pageable);
+  // PAGINACIÓN simple: Solo productos activos
+  @Query("SELECT p FROM Producto p WHERE p.activo = true")
+  Page<Producto> findByActivoTrue(Pageable pageable);
 
-    // BÚSQUEDA paginada con filtros opcionales q (texto), lab (laboratorio) y cat (categoría).
-    // No usamos JOIN FETCH aquí para mantener la semántica correcta de Page.
-    @Query("""
-        SELECT p FROM Producto p
-        WHERE p.activo = true
-          AND (
-              :q IS NULL
-              OR :q = ''
-              OR LOWER(p.nombre) LIKE LOWER(CONCAT('%', :q, '%'))
-              OR LOWER(p.codigoBarras) LIKE LOWER(CONCAT('%', :q, '%'))
-              OR LOWER(p.categoria) LIKE LOWER(CONCAT('%', :q, '%'))
-              OR LOWER(p.laboratorio) LIKE LOWER(CONCAT('%', :q, '%'))
-          )
-          AND ( :lab IS NULL OR :lab = '' OR LOWER(p.laboratorio) = LOWER(:lab) )
-          AND ( :cat IS NULL OR :cat = '' OR LOWER(p.categoria) = LOWER(:cat) )
-    """)
-    Page<Producto> search(@Param("q") String q, @Param("lab") String lab, @Param("cat") String cat, Pageable pageable);
+  // BÚSQUEDA paginada con filtros opcionales q (texto), lab (laboratorio) y cat
+  // (categoría).
+  // No usamos JOIN FETCH aquí para mantener la semántica correcta de Page.
+  @Query("""
+          SELECT p FROM Producto p
+          WHERE p.activo = true
+            AND (
+                :q IS NULL
+                OR :q = ''
+                OR LOWER(p.nombre) LIKE LOWER(CONCAT('%', :q, '%'))
+                OR LOWER(p.codigoBarras) LIKE LOWER(CONCAT('%', :q, '%'))
+                OR LOWER(p.categoria) LIKE LOWER(CONCAT('%', :q, '%'))
+                OR LOWER(p.laboratorio) LIKE LOWER(CONCAT('%', :q, '%'))
+            )
+            AND ( :lab IS NULL OR :lab = '' OR LOWER(p.laboratorio) = LOWER(:lab) )
+            AND ( :cat IS NULL OR :cat = '' OR LOWER(p.categoria) = LOWER(:cat) )
+      """)
+  Page<Producto> search(@Param("q") String q, @Param("lab") String lab, @Param("cat") String cat, Pageable pageable);
 
-    // Fallbacks / helpers
-    Producto findByCodigoBarras(String codigoBarras);
-    List<Producto> findByActivoTrue();
-    List<Producto> findByNombreContainingIgnoreCaseAndActivoTrue(String nombre);
-    List<Producto> findByCategoriaContainingIgnoreCaseAndActivoTrue(String categoria);
-    List<Producto> findByNombreContainingIgnoreCaseAndCategoriaContainingIgnoreCaseAndActivoTrue(String nombre, String categoria);
+  // Fallbacks / helpers
+  Producto findByCodigoBarras(String codigoBarras);
 
-    @Query(
-            value = """
-            SELECT p.nombre, SUM(d.cantidad) AS totalVendidas,
-              (SUM(d.cantidad) * 100.0 / (SELECT SUM(d2.cantidad) FROM detalles_boleta d2)) AS porcentaje
-            FROM detalles_boleta d
-            JOIN productos p ON d.producto_id = p.id
-            GROUP BY p.id, p.nombre
-            ORDER BY totalVendidas DESC
-            """,
-            nativeQuery = true
-    )
-    List<Object[]> findProductosMasVendidos(Pageable pageable);
+  List<Producto> findByActivoTrue();
 
-    @Query("SELECT p FROM Producto p LEFT JOIN FETCH p.stocks WHERE p.id = :id")
-    Optional<Producto> findByIdWithStocks(@Param("id") Long id);
+  List<Producto> findByNombreContainingIgnoreCaseAndActivoTrue(String nombre);
 
-    // Find products by supplier - DEPRECATED: Now using ProductoProveedor intermediate table
-    // Use ProductoProveedorRepository.findByProveedorId() instead
-    // @Query("SELECT p FROM Producto p WHERE p.proveedor.id = :proveedorId AND p.activo = true")
-    // List<Producto> findByProveedorIdAndActivoTrue(@Param("proveedorId") Long proveedorId);
+  List<Producto> findByCategoriaContainingIgnoreCaseAndActivoTrue(String categoria);
 
-    // Find products created within a date range
-    @Query("SELECT p FROM Producto p WHERE p.fechaCreacion BETWEEN :fechaInicio AND :fechaFin AND p.activo = true")
-    List<Producto> findByFechaCreacionBetween(@Param("fechaInicio") java.util.Date fechaInicio, @Param("fechaFin") java.util.Date fechaFin);
+  List<Producto> findByNombreContainingIgnoreCaseAndCategoriaContainingIgnoreCaseAndActivoTrue(String nombre,
+      String categoria);
 
-    // Find products by category with stocks
-    @Query("SELECT DISTINCT p FROM Producto p LEFT JOIN FETCH p.stocks WHERE LOWER(p.categoria) = LOWER(:categoria) AND p.activo = true")
-    List<Producto> findByCategoriaWithStocks(@Param("categoria") String categoria);
+  @Query(value = """
+      SELECT p.nombre, SUM(d.cantidad) AS totalVendidas,
+        (SUM(d.cantidad) * 100.0 / (SELECT SUM(d2.cantidad) FROM detalles_boleta d2)) AS porcentaje
+      FROM detalles_boleta d
+      JOIN productos p ON d.producto_id = p.id
+      GROUP BY p.id, p.nombre
+      ORDER BY totalVendidas DESC
+      """, nativeQuery = true)
+  List<Object[]> findProductosMasVendidos(Pageable pageable);
+
+  @Query("SELECT p FROM Producto p LEFT JOIN FETCH p.stocks WHERE p.id = :id")
+  Optional<Producto> findByIdWithStocks(@Param("id") Long id);
+
+  // Buscar por numero de registro sanitario
+  Optional<Producto> findByNroRegistroSanitario(String nroRegistroSanitario);
+
+  // Find products by supplier - DEPRECATED: Now using ProductoProveedor
+  // intermediate table
+  // Use ProductoProveedorRepository.findByProveedorId() instead
+  // @Query("SELECT p FROM Producto p WHERE p.proveedor.id = :proveedorId AND
+  // p.activo = true")
+  // List<Producto> findByProveedorIdAndActivoTrue(@Param("proveedorId") Long
+  // proveedorId);
+
+  // Find products created within a date range
+  @Query("SELECT p FROM Producto p WHERE p.fechaCreacion BETWEEN :fechaInicio AND :fechaFin AND p.activo = true")
+  List<Producto> findByFechaCreacionBetween(@Param("fechaInicio") java.util.Date fechaInicio,
+      @Param("fechaFin") java.util.Date fechaFin);
+
+  // Find products by category with stocks
+  @Query("SELECT DISTINCT p FROM Producto p LEFT JOIN FETCH p.stocks WHERE LOWER(p.categoria) = LOWER(:categoria) AND p.activo = true")
+  List<Producto> findByCategoriaWithStocks(@Param("categoria") String categoria);
+
+  // ===== MÉTRICAS =====
+
+  // Contar productos activos
+  @Query("SELECT COUNT(p) FROM Producto p WHERE p.activo = true")
+  Long countByActivoTrue();
+
+  // Sumar cantidad general de todos los productos activos
+  @Query("SELECT COALESCE(SUM(p.cantidadGeneral), 0) FROM Producto p WHERE p.activo = true")
+  Long sumCantidadGeneralByActivoTrue();
+
+  // Contar productos con stock crítico (cantidad_general <= cantidad_minima)
+  @Query("SELECT COUNT(p) FROM Producto p WHERE p.activo = true AND p.cantidadGeneral <= p.cantidadMinima")
+  Long countProductosStockCritico();
+
+  // Productos con stock bajo (paginado)
+  @Query("SELECT p FROM Producto p WHERE p.activo = true AND (p.cantidadGeneral IS NULL OR p.cantidadGeneral < :umbral)")
+  Page<Producto> findByStockBajo(@Param("umbral") int umbral, Pageable pageable);
 
 }

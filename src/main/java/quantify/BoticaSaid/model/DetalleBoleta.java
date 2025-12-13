@@ -24,6 +24,9 @@ public class DetalleBoleta {
     @Column(name = "precio_unitario")
     private BigDecimal precioUnitario;
 
+    @Column(name = "tipo_venta")
+    private String tipoVenta; // "BLISTER" o "UNIDAD", null para datos legacy
+
     // Getters y setters
 
     public Integer getId() {
@@ -64,5 +67,13 @@ public class DetalleBoleta {
 
     public void setPrecioUnitario(BigDecimal precioUnitario) {
         this.precioUnitario = precioUnitario;
+    }
+
+    public String getTipoVenta() {
+        return tipoVenta;
+    }
+
+    public void setTipoVenta(String tipoVenta) {
+        this.tipoVenta = tipoVenta;
     }
 }

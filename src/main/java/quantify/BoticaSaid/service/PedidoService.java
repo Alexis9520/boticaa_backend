@@ -78,15 +78,16 @@ public class PedidoService {
             return false;
         }
 
-        // Obtener el proveedor: usar el proveedorId del request o el primer proveedor del producto
+        // Obtener el proveedor: usar el proveedorId del request o el primer proveedor
+        // del producto
         Proveedor proveedor = null;
         if (request.getProveedorId() != null) {
             // Buscar proveedor por ID del request
             proveedor = producto.getProductoProveedores().stream()
-                .map(pp -> pp.getProveedor())
-                .filter(p -> p.getId().equals(request.getProveedorId()))
-                .findFirst()
-                .orElse(null);
+                    .map(pp -> pp.getProveedor())
+                    .filter(p -> p.getId().equals(request.getProveedorId()))
+                    .findFirst()
+                    .orElse(null);
         } else if (!producto.getProductoProveedores().isEmpty()) {
             // Tomar el primer proveedor si no se especificó uno
             proveedor = producto.getProductoProveedores().get(0).getProveedor();
@@ -135,12 +136,13 @@ public class PedidoService {
 
         return true;
     }
-public List<PedidoReporteDTO> obtenerReporte(Long proveedorId, LocalDate fechaPedido) {
+
+    public List<PedidoReporteDTO> obtenerReporte(Long proveedorId, LocalDate fechaPedido) {
         List<Pedido> pedidos = pedidoRepository.findByFilters(proveedorId, fechaPedido);
 
         return pedidos.stream()
-            .map(this::convertirAPedidoReporteDTO)
-            .collect(Collectors.toList());
+                .map(this::convertirAPedidoReporteDTO)
+                .collect(Collectors.toList());
     }
 
     private PedidoReporteDTO convertirAPedidoReporteDTO(Pedido pedido) {
@@ -169,85 +171,92 @@ public List<PedidoReporteDTO> obtenerReporte(Long proveedorId, LocalDate fechaPe
             dto.setFCreacion(stock.getFechaCreacion());
         }
 
+        // Fecha del pedido
+        dto.setFechaDePedido(pedido.getFechaDePedido());
+
         return dto;
     }
-@Transactional
-public boolean actualizarPedido(Long pedidoId, ActualizarPedidoRequest request) {
-    Optional<Pedido> optPedido = pedidoRepository.findById(pedidoId);
-    if (optPedido.isEmpty()) {
+
+    @Transactional
+    public boolean actualizarPedido(Long pedidoId, ActualizarPedidoRequest request) {
+        Optional<Pedido> optPedido = pedidoRepository.findById(pedidoId);
+        if (optPedido.isEmpty()) {
+            return false;
+        }
+        Pedido pedido = optPedido.get();
+        Stock stock = pedido.getStock();
+        Producto producto = pedido.getProducto();
+
+        if (stock == null || producto == null) {
+            return false;
+        }
+
+        ActualizarStockRequest s = request.getStock();
+        boolean cualquierCambio = false;
+
+        if (s != null) {
+            // cantidadInicial
+            if (s.getCantidadInicial() != null) {
+                int newInicial = s.getCantidadInicial();
+                Integer oldInicialObj = stock.getCantidadInicial();
+                int oldInicial = oldInicialObj != null ? oldInicialObj : 0;
+
+                Integer currentUnidadesObj = stock.getCantidadUnidades();
+                int currentUnidades = currentUnidadesObj != null ? currentUnidadesObj : 0;
+
+                int deltaInicial = newInicial - oldInicial;
+                int recalculatedUnidades = currentUnidades + deltaInicial;
+                if (recalculatedUnidades < 0)
+                    recalculatedUnidades = 0;
+
+                int currentGeneral = producto.getCantidadGeneral() != null ? producto.getCantidadGeneral() : 0;
+                int diffUnidades = recalculatedUnidades - currentUnidades;
+                int nuevoGeneral = currentGeneral + diffUnidades;
+                if (nuevoGeneral < 0)
+                    nuevoGeneral = 0;
+
+                producto.setCantidadGeneral(nuevoGeneral);
+                stock.setCantidadInicial(newInicial);
+                stock.setCantidadUnidades(recalculatedUnidades);
+
+                cualquierCambio = true;
+            }
+
+            // fecha de vencimiento
+            if (s.getFechaVencimiento() != null) {
+                stock.setFechaVencimiento(s.getFechaVencimiento());
+                cualquierCambio = true;
+            }
+
+            // precio de compra (ya es BigDecimal en el DTO)
+            if (s.getPrecioCompra() != null) {
+                stock.setPrecioCompra(s.getPrecioCompra());
+                cualquierCambio = true;
+            }
+
+            // opcional: código de lote
+            if (s.getCodigoStock() != null) {
+                stock.setCodigoStock(s.getCodigoStock());
+                cualquierCambio = true;
+            }
+        }
+
+        // fecha de pedido en el pedido
+        if (request.getFechaDePedido() != null) {
+            pedido.setFechaDePedido(request.getFechaDePedido());
+            cualquierCambio = true;
+        }
+
+        if (cualquierCambio) {
+            productoRepository.save(producto);
+            stockRepository.save(stock);
+            pedidoRepository.save(pedido);
+            return true;
+        }
+
         return false;
     }
-    Pedido pedido = optPedido.get();
-    Stock stock = pedido.getStock();
-    Producto producto = pedido.getProducto();
 
-    if (stock == null || producto == null) {
-        return false;
-    }
-
-    ActualizarStockRequest s = request.getStock();
-    boolean cualquierCambio = false;
-
-    if (s != null) {
-        // cantidadInicial
-        if (s.getCantidadInicial() != null) {
-            int newInicial = s.getCantidadInicial();
-            Integer oldInicialObj = stock.getCantidadInicial();
-            int oldInicial = oldInicialObj != null ? oldInicialObj : 0;
-
-            Integer currentUnidadesObj = stock.getCantidadUnidades();
-            int currentUnidades = currentUnidadesObj != null ? currentUnidadesObj : 0;
-
-            int deltaInicial = newInicial - oldInicial;
-            int recalculatedUnidades = currentUnidades + deltaInicial;
-            if (recalculatedUnidades < 0) recalculatedUnidades = 0;
-
-            int currentGeneral = producto.getCantidadGeneral() != null ? producto.getCantidadGeneral() : 0;
-            int diffUnidades = recalculatedUnidades - currentUnidades;
-            int nuevoGeneral = currentGeneral + diffUnidades;
-            if (nuevoGeneral < 0) nuevoGeneral = 0;
-
-            producto.setCantidadGeneral(nuevoGeneral);
-            stock.setCantidadInicial(newInicial);
-            stock.setCantidadUnidades(recalculatedUnidades);
-
-            cualquierCambio = true;
-        }
-
-        // fecha de vencimiento
-        if (s.getFechaVencimiento() != null) {
-            stock.setFechaVencimiento(s.getFechaVencimiento());
-            cualquierCambio = true;
-        }
-
-        // precio de compra (ya es BigDecimal en el DTO)
-        if (s.getPrecioCompra() != null) {
-            stock.setPrecioCompra(s.getPrecioCompra());
-            cualquierCambio = true;
-        }
-
-        // opcional: código de lote
-        if (s.getCodigoStock() != null) {
-            stock.setCodigoStock(s.getCodigoStock());
-            cualquierCambio = true;
-        }
-    }
-
-    // fecha de pedido en el pedido
-    if (request.getFechaDePedido() != null) {
-        pedido.setFechaDePedido(request.getFechaDePedido());
-        cualquierCambio = true;
-    }
-
-    if (cualquierCambio) {
-        productoRepository.save(producto);
-        stockRepository.save(stock);
-        pedidoRepository.save(pedido);
-        return true;
-    }
-
-    return false;
-}
     @Transactional
     public boolean eliminarPedido(Long pedidoId) {
         Optional<Pedido> optPedido = pedidoRepository.findById(pedidoId);
@@ -263,7 +272,8 @@ public boolean actualizarPedido(Long pedidoId, ActualizarPedidoRequest request) 
             Integer currentGeneral = producto.getCantidadGeneral() != null ? producto.getCantidadGeneral() : 0;
             producto.setCantidadGeneral(Math.max(0, currentGeneral - qty));
 
-            // Remover stock de la lista del producto si existe (usar Objects.equals para seguridad con primitivos/objetos)
+            // Remover stock de la lista del producto si existe (usar Objects.equals para
+            // seguridad con primitivos/objetos)
             producto.getStocks().removeIf(pStock -> java.util.Objects.equals(pStock.getId(), stock.getId()));
             productoRepository.save(producto);
         }
@@ -347,7 +357,8 @@ public boolean actualizarPedido(Long pedidoId, ActualizarPedidoRequest request) 
         DashboardResumenDTO.ProveedoresMetricasDTO dto = new DashboardResumenDTO.ProveedoresMetricasDTO();
         dto.activos = proveedorRepository.countByActivoTrue();
         dto.conPedidos30Dias = pedidoRepository.findProveedorIdsBetween(hace30Dias, hoy).size();
-        dto.sinPedidos90Dias = Math.max(0, dto.activos - pedidoRepository.findProveedorIdsBetween(hace90Dias, hoy).size());
+        dto.sinPedidos90Dias = Math.max(0,
+                dto.activos - pedidoRepository.findProveedorIdsBetween(hace90Dias, hoy).size());
 
         List<Pedido> pedidosVentana = pedidoRepository.findWithStockBetween(hace90Dias, hoy);
         dto.leadTimePromedioDias = calcularLeadTimePromedio(pedidosVentana);
